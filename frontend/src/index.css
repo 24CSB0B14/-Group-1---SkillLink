@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    /* SkillLink Bluish Theme - Professional & Modern */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Primary Blue - SkillLink Brand */
+    --primary: 207 90% 54%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 207 90% 47%;
+    --primary-light: 207 90% 92%;
+
+    /* Secondary - Slate Gray for professional look */
+    --secondary: 215 15% 92%;
+    --secondary-foreground: 215 25% 15%;
+
+    --muted: 210 15% 95%;
+    --muted-foreground: 215 15% 50%;
+
+    /* Accent - Darker blue-gray for headers */
+    --accent: 215 25% 27%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 15% 88%;
+    --input: 215 15% 88%;
+    --ring: 207 90% 54%;
+
+    /* Status colors */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --radius: 0.75rem;
+
+    /* Dark navbar/header */
+    --header-bg: 215 28% 17%;
+    --header-fg: 0 0% 100%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 215 25% 27%;
+    --sidebar-primary: 207 90% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 207 90% 97%;
+    --sidebar-accent-foreground: 207 90% 54%;
+    --sidebar-border: 215 15% 88%;
+    --sidebar-ring: 207 90% 54%;
+  }
+
+  .dark {
+    --background: 215 28% 17%;
+    --foreground: 210 20% 98%;
+
+    --card: 215 25% 20%;
+    --card-foreground: 210 20% 98%;
+
+    --popover: 215 25% 20%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 207 90% 54%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 207 90% 61%;
+    --primary-light: 207 90% 25%;
+
+    --secondary: 215 20% 25%;
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 215 20% 25%;
+    --muted-foreground: 215 15% 70%;
+
+    --accent: 207 90% 54%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 215 20% 30%;
+    --input: 215 20% 30%;
+    --ring: 207 90% 61%;
+
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    --info: 199 89% 48%;
+
+    --header-bg: 215 28% 14%;
+    --header-fg: 0 0% 100%;
+
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 207 90% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 22%;
+    --sidebar-accent-foreground: 207 90% 54%;
+    --sidebar-border: 215 20% 30%;
+    --sidebar-ring: 207 90% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
