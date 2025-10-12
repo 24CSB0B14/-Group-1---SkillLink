@@ -2,6 +2,7 @@ import mongoose, {Schema} from "mongoose"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import { UserRolesEnum } from "../utils/constants.js"
 //This defines a User schema for MongoDB using Mongoose.
 //A schema is like a blueprint → it tells MongoDB what fields each document in the users collection should have, along with their types, rules, and defaults.
 const userSchema = new Schema(
@@ -39,9 +40,22 @@ const userSchema = new Schema(
             type: String,
             required: [true, "Password is required!"],
         },
+        role: {
+            type: String,
+            enum: [UserRolesEnum.CLIENT, UserRolesEnum.FREELANCER],
+            required: true
+        },
         isEmailVerified: {
             type: Boolean,
             default: false,
+        },
+        clientProfile: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "ClientProfile"
+        },
+        freelancerProfile: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "FreelancerProfile"
         },
         refreshToken: { //Stores JWT refresh token for user sessions (used to re-issue new access tokens without re-login).
             type: String,
@@ -62,7 +76,7 @@ const userSchema = new Schema(
         },
         emailVerificationExpiry: {
             type: String,
-        }
+        },
     },
     { 
         //Automatically adds two fields: createdAt, updatedAt

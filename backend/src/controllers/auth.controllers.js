@@ -1,10 +1,13 @@
 import { User } from "../models/user.models.js";
+import { ClientProfile } from "../models/clientProfile.models.js";
+import { FreelancerProfile } from "../models/freelancerProfile.models.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { ApiError } from "../utils/api-error.js"
 import { asyncHandler } from "../utils/async-handler.js";
 import { emailVerificationMailgenContent, forgetPasswordMailgenContent, sendEmail } from "../utils/mail.js"
 import jwt from "jsonwebtoken"
 import crypto from "crypto"
+import { UserRolesEnum } from "../utils/constants.js";
 
 // Function to generate both access & refresh tokens for a user
 const generateAccessAndRefreshTokens = async (userId) => {
@@ -33,10 +36,12 @@ const registerUser = asyncHandler(async (req, res) => {
     //Extract user input from the request body
     const {email, username, password, role} = req.body
 
+    if (![UserRolesEnum.CLIENT, UserRolesEnum.FREELANCER].includes(role)) {
+        throw new ApiError(400, "Role must be either 'client' or 'freelancer'");
+    }
+
     //Check if a user with same email or username already exists
-    const existedUser = await User.findOne({
-        $or: [{username}, {email}] 
-    })
+    const existedUser = await User.findOne({email})
 
     if (existedUser) {
         // 409 = Conflict (duplicate resource)
@@ -49,8 +54,32 @@ const registerUser = asyncHandler(async (req, res) => {
         email,
         password,
         username,
-        isEmailVerified: false
-    })
+        role, //client or freelancer
+        isEmailVerified: false,
+    });
+
+    // Create role-specific profile
+    if (role === UserRolesEnum.CLIENT) {
+        const clientProfile = await ClientProfile.create({
+            user: user._id,
+            companyName: "",
+            about: "",
+            logo: "",
+            contact: "",
+        });
+        user.clientProfile = clientProfile._id;
+    }
+
+    if (role === UserRolesEnum.FREELANCER) {
+        const freelancerProfile = await FreelancerProfile.create({
+            user: user._id,
+            skills: [],
+            portfolio: "",
+            hourlyRate: 0,
+            experience: ""
+        });
+        user.freelancerProfile = freelancerProfile._id;
+    }
 
     //Generate a temporary token for email verification
     const {unHashedToken, hashedToken, tokenExpiry} = user.generateTemporaryToken();
@@ -92,7 +121,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
 const login = asyncHandler(async (req, res) => {
     //Extract user input from the request body
-    const {email, password, username} = req.body
+    const {email, password} = req.body
 
     if (!email) {
         console.log("../backend/src/controllers/auth.controllers.js")

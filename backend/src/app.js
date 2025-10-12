@@ -16,7 +16,7 @@ app.use(cookieParser());
 
 //basic setup of cors
 app.use(cors({
-    origin : process.env.CORS_ORIGIN?.split(",") || "http://localhost:5173", //allows requests from specified urls
+    origin : process.env.CORS_ORIGIN?.split(",") || "http://localhost:8080", //allows requests from specified urls
     credentials : true, //allows cookies, authorization headers etc
     methods : ["GET", "POST", "PUT", "PATCH", "DELETE", "DELETE", "OPTIONS"], //allows these req from frontend
     allowedHeaders: ["Content-Type", "Authorization"] //List of headers allowed in cross origin requests
@@ -26,12 +26,32 @@ app.use(cors({
 import healthCheckRouter from "./routes/healthcheck.routes.js";
 //importing all routes to test 
 import authRouter from "./routes/auth.routes.js";
+//importing profile routes
+import profileRoutes from "./routes/profile.routes.js"
+//importing jobs posting routes
+import jobRoutes from "./routes/job.routes.js"
+//importing bid routes
+import bidRoutes from "./routes/bid.routes.js";
+//importing invitation routes
+import invitationRoutes from "./routes/invitation.routes.js"
 
 //url for healthCheck
 app.use("/api/v1/healthCheck", healthCheckRouter);
 
 //url for remaining routes
 app.use("/api/v1/auth", authRouter)
+
+//url for profile
+app.use("/api/v1/profile", profileRoutes)
+
+//url for jobs
+app.use("/api/v1/jobs", jobRoutes)
+
+//url for bids
+app.use("/api/v1/bids", bidRoutes)
+
+//url for invitations
+app.use("/api/v1/invitations", invitationRoutes)
 
 export default app
 

@@ -5,9 +5,11 @@ export const UserRolesEnum = {
 };
 
 export const CONTRACT_STATUS = {
-    ACTIVE: "active",
-    COMPLETED: "completed",
-    DISPUTED: "disputed"
+    ACTIVE: "ACTIVE",
+    IN_PROGRESS: "IN_PROGRESS",
+    COMPLETED: "COMPLETED",
+    CANCELLED: "CANCELLED",
+    DISPUTED: "DISPUTED"
 };
 
 export const FILE_UPLOAD = {
