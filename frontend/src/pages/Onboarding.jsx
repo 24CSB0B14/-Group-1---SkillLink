@@ -18,7 +18,7 @@ const Onboarding = () => {
     displayName: storedUser.name || "",
     bio: "",
     companyName: "",
-    skills: [] as string[],
+    skills: [],
     portfolioLinks: [""],
     hourlyRate: "",
     experience: "",
@@ -33,7 +33,7 @@ const Onboarding = () => {
     }
   };
 
-  const removeSkill = (skill: string) => {
+  const removeSkill = (skill) => {
     setProfile({ ...profile, skills: profile.skills.filter((s) => s !== skill) });
   };
 
@@ -41,13 +41,13 @@ const Onboarding = () => {
     setProfile({ ...profile, portfolioLinks: [...profile.portfolioLinks, ""] });
   };
 
-  const updatePortfolioLink = (index: number, value: string) => {
+  const updatePortfolioLink = (index, value) => {
     const newLinks = [...profile.portfolioLinks];
     newLinks[index] = value;
     setProfile({ ...profile, portfolioLinks: newLinks });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     // Update user profile in localStorage

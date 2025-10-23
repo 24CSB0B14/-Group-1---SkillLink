@@ -8,7 +8,7 @@ import { LayoutDashboard, Briefcase, Wallet, User, TrendingUp, Search } from "lu
 
 const FreelancerDashboard = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("skilllink_user");

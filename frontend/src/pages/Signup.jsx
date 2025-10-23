@@ -13,10 +13,10 @@ const Signup = () => {
     name: "",
     email: "",
     password: "",
-    role: "client" as "client" | "freelancer",
+    role: "client",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     
     // Store user data in localStorage for demo purposes

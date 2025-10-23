@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState(null);
   const [skillInput, setSkillInput] = useState("");
 
   useEffect(() => {
@@ -29,7 +29,7 @@ const EditProfile = () => {
   const isFreelancer = user.role === "freelancer";
   const profile = user.profile || {};
 
-  const updateProfile = (updates: any) => {
+  const updateProfile = (updates) => {
     setUser({
       ...user,
       profile: { ...profile, ...updates },
@@ -43,21 +43,21 @@ const EditProfile = () => {
     }
   };
 
-  const removeSkill = (skill: string) => {
-    updateProfile({ skills: profile.skills.filter((s: string) => s !== skill) });
+  const removeSkill = (skill) => {
+    updateProfile({ skills: profile.skills.filter((s) => s !== skill) });
   };
 
   const addPortfolioLink = () => {
     updateProfile({ portfolioLinks: [...(profile.portfolioLinks || [""]), ""] });
   };
 
-  const updatePortfolioLink = (index: number, value: string) => {
+  const updatePortfolioLink = (index, value) => {
     const newLinks = [...(profile.portfolioLinks || [""])];
     newLinks[index] = value;
     updateProfile({ portfolioLinks: newLinks });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     localStorage.setItem("skilllink_user", JSON.stringify(user));
     toast.success("Profile updated successfully!");
@@ -176,7 +176,7 @@ const EditProfile = () => {
                           </Button>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-2">
-                          {(profile.skills || []).map((skill: string) => (
+                          {(profile.skills || []).map((skill) => (
                             <Badge key={skill} className="gap-1">
                               {skill}
                               <button
@@ -211,7 +211,7 @@ const EditProfile = () => {
 
                     <div className="space-y-4">
                       <h3 className="font-semibold">Portfolio</h3>
-                      {(profile.portfolioLinks || [""]).map((link: string, index: number) => (
+                      {(profile.portfolioLinks || [""]).map((link, index) => (
                         <Input
                           key={index}
                           placeholder="https://your-portfolio-link.com"
