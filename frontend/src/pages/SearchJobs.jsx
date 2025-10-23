@@ -1,0 +1,256 @@
+// pages/SearchJobs.jsx
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Search, Filter, DollarSign, Calendar, Clock, MapPin, Star } from "lucide-react";
+
+const SearchJobs = () => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [budgetRange, setBudgetRange] = useState("all");
+  const [experienceLevel, setExperienceLevel] = useState("all");
+
+  const jobs = [
+    {
+      id: "SKL-001",
+      title: "Senior UI/UX Designer for Mobile App",
+      description: "We need an experienced UI/UX designer to redesign our mobile banking application with focus on user experience and modern design principles.",
+      budget: 5000,
+      budgetType: "fixed",
+      category: "UI/UX Design",
+      experienceLevel: "expert",
+      skills: ["Figma", "UI/UX Design", "Mobile Design", "Prototyping"],
+      client: {
+        name: "Tech Innovations Inc.",
+        rating: 4.8,
+        totalSpent: 45200
+      },
+      proposals: 12,
+      duration: "3-4 weeks",
+      posted: "2 days ago",
+      featured: true
+    },
+    {
+      id: "SKL-002",
+      title: "Full-Stack React Developer",
+      description: "Looking for a full-stack developer to build a responsive web application with React frontend and Node.js backend.",
+      budget: 45,
+      budgetType: "hourly",
+      category: "Web Development",
+      experienceLevel: "intermediate",
+      skills: ["React", "Node.js", "MongoDB", "TypeScript"],
+      client: {
+        name: "Startup Ventures",
+        rating: 4.6,
+        totalSpent: 12800
+      },
+      proposals: 8,
+      duration: "1-3 months",
+      posted: "1 day ago",
+      featured: false
+    },
+    {
+      id: "SKL-003",
+      title: "Content Writer for Tech Blog",
+      description: "Need a skilled content writer to create engaging articles about technology trends and software development.",
+      budget: 1200,
+      budgetType: "fixed",
+      category: "Writing",
+      experienceLevel: "intermediate",
+      skills: ["Content Writing", "SEO", "Technology", "Blogging"],
+      client: {
+        name: "Tech Blog Media",
+        rating: 4.9,
+        totalSpent: 8900
+      },
+      proposals: 5,
+      duration: "2 weeks",
+      posted: "5 hours ago",
+      featured: true
+    }
+  ];
+
+  const categories = [
+    "Web Development",
+    "Mobile Development", 
+    "UI/UX Design",
+    "Writing & Content",
+    "Digital Marketing",
+    "Data Science"
+  ];
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         job.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesCategory = selectedCategory === "all" || job.category === selectedCategory;
+    const matchesExperience = experienceLevel === "all" || job.experienceLevel === experienceLevel;
+
+    return matchesSearch && matchesCategory && matchesExperience;
+  });
+
+  return (
+    <div className="min-h-screen bg-background py-8">
+      <div className="container mx-auto px-4 max-w-7xl">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold">Find Jobs</h1>
+            <p className="text-muted-foreground mt-2">
+              Discover opportunities that match your skills
+            </p>
+          </div>
+          <Button asChild>
+            <Link to="/freelancer-dashboard">My Dashboard</Link>
+          </Button>
+        </div>
+
+        {/* Search and Filters */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <div className="grid md:grid-cols-4 gap-4">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search jobs, skills..."
+                  className="pl-10"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Category" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={experienceLevel} onValueChange={setExperienceLevel}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Experience Level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Levels</SelectItem>
+                  <SelectItem value="entry">Entry Level</SelectItem>
+                  <SelectItem value="intermediate">Intermediate</SelectItem>
+                  <SelectItem value="expert">Expert</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setSearchTerm("");
+                  setSelectedCategory("all");
+                  setExperienceLevel("all");
+                }}
+              >
+                <Filter className="w-4 h-4 mr-2" />
+                Clear Filters
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Job Listings */}
+        <div className="space-y-6">
+          {filteredJobs.map((job) => (
+            <Card key={job.id} className={`hover:shadow-lg transition ${job.featured ? 'border-primary/20 bg-primary/5' : ''}`}>
+              <CardContent className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <h3 className="text-xl font-semibold">{job.title}</h3>
+                      {job.featured && (
+                        <Badge className="bg-warning text-white">Featured</Badge>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                        <span>{job.client.rating}</span>
+                      </div>
+                      <span>•</span>
+                      <span>{job.client.name}</span>
+                      <span>•</span>
+                      <span>${job.client.totalSpent.toLocaleString()} total spent</span>
+                    </div>
+
+                    <p className="text-muted-foreground mb-4 line-clamp-2">
+                      {job.description}
+                    </p>
+
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      {job.skills.map((skill, index) => (
+                        <Badge key={index} variant="outline">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+
+                    <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <DollarSign className="w-4 h-4" />
+                        <span>
+                          {job.budgetType === 'hourly' ? `$${job.budget}/hr` : `$${job.budget} fixed`}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{job.duration}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{job.posted}</span>
+                      </div>
+                      <span>{job.proposals} proposals</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 ml-4">
+                    <Button asChild>
+                      <Link to={`/job-details/${job.id}`}>
+                        Apply Now
+                      </Link>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <Link to={`/job-details/${job.id}`}>
+                        View Details
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredJobs.length === 0 && (
+          <div className="text-center py-12">
+            <Search className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
+            <p className="text-muted-foreground">
+              Try adjusting your search criteria or browse all jobs.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default SearchJobs;
