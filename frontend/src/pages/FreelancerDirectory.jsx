@@ -1,5 +1,5 @@
 // pages/FreelancerDirectory.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,75 +10,55 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Search, Star, MapPin, Briefcase, DollarSign } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import profileService from "@/services/profile.service";
 
 const FreelancerDirectory = () => {
   const { isClient } = useRole();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSkills, setSelectedSkills] = useState([]);
+  const [freelancers, setFreelancers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [experienceFilter, setExperienceFilter] = useState("all");
   const [rateFilter, setRateFilter] = useState("all");
 
-  const freelancers = [
-    {
-      id: 1,
-      name: "Sarah Chen",
-      title: "Senior UI/UX Designer",
-      avatar: "",
-      rating: 4.9,
-      completedProjects: 47,
-      skills: ["Figma", "UI/UX Design", "Prototyping", "User Research"],
-      hourlyRate: 85,
-      location: "San Francisco, CA",
-      experience: "expert",
-      bio: "Specialized in mobile app design with 8+ years of experience in fintech and e-commerce."
-    },
-    {
-      id: 2,
-      name: "Mike Rodriguez",
-      title: "Full-Stack Developer",
-      avatar: "",
-      rating: 4.7,
-      completedProjects: 32,
-      skills: ["React", "Node.js", "Python", "MongoDB"],
-      hourlyRate: 75,
-      location: "Austin, TX",
-      experience: "expert",
-      bio: "Passionate about building scalable web applications with modern technologies."
-    },
-    {
-      id: 3,
-      name: "Emily Watson",
-      title: "Content Writer & SEO Specialist",
-      avatar: "",
-      rating: 4.8,
-      completedProjects: 28,
-      skills: ["Content Writing", "SEO", "Blogging", "Copywriting"],
-      hourlyRate: 45,
-      location: "Remote",
-      experience: "intermediate",
-      bio: "Creating engaging content that ranks well and converts readers into customers."
-    }
-  ];
+  useEffect(() => {
+    fetchFreelancers();
+  }, []);
 
-  const skills = ["React", "Node.js", "UI/UX Design", "Figma", "Python", "Content Writing", "SEO", "Mobile Design"];
+  const fetchFreelancers = async () => {
+    try {
+      setLoading(true);
+      const response = await profileService.getAllFreelancers({ search: searchTerm });
+      const data = response.data || [];
+      setFreelancers(data);
+    } catch (error) {
+      toast.error("Failed to load freelancers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = () => {
+    fetchFreelancers();
+  };
 
   const filteredFreelancers = freelancers.filter(freelancer => {
-    const matchesSearch = freelancer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         freelancer.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         freelancer.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+    const profile = freelancer.freelancerProfile;
+    if (!profile) return false;
     
-    const matchesExperience = experienceFilter === "all" || freelancer.experience === experienceFilter;
+    const matchesExperience = experienceFilter === "all" || profile.experience === experienceFilter;
     const matchesRate = rateFilter === "all" || 
-                       (rateFilter === "low" && freelancer.hourlyRate < 50) ||
-                       (rateFilter === "medium" && freelancer.hourlyRate >= 50 && freelancer.hourlyRate < 80) ||
-                       (rateFilter === "high" && freelancer.hourlyRate >= 80);
+                       (rateFilter === "low" && profile.hourlyRate < 50) ||
+                       (rateFilter === "medium" && profile.hourlyRate >= 50 && profile.hourlyRate < 80) ||
+                       (rateFilter === "high" && profile.hourlyRate >= 80);
 
-    return matchesSearch && matchesExperience && matchesRate;
+    return matchesExperience && matchesRate;
   });
 
-  // Additional check to ensure we have user data
   const canInvite = isClient() && user;
+
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -108,8 +88,13 @@ const FreelancerDirectory = () => {
                   className="pl-10"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
               </div>
+              
+              <Button onClick={handleSearch}>
+                Search
+              </Button>
               
               <Select value={experienceFilter} onValueChange={setExperienceFilter}>
                 <SelectTrigger>
@@ -139,6 +124,7 @@ const FreelancerDirectory = () => {
                 setSearchTerm("");
                 setExperienceFilter("all");
                 setRateFilter("all");
+                fetchFreelancers();
               }}>
                 Clear Filters
               </Button>
@@ -148,78 +134,72 @@ const FreelancerDirectory = () => {
 
         {/* Results */}
         <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredFreelancers.map((freelancer) => (
-            <Card key={freelancer.id} className="hover:shadow-lg transition">
+          {filteredFreelancers.map((freelancer) => {
+            const profile = freelancer.freelancerProfile || {};
+            return (
+            <Card key={freelancer._id} className="hover:shadow-lg transition">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-12 h-12">
                       <AvatarImage src={freelancer.avatar} />
                       <AvatarFallback className="bg-primary/20 text-primary">
-                        {freelancer.name.split(' ').map(n => n[0]).join('')}
+                        {freelancer.username?.charAt(0).toUpperCase() || 'F'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">{freelancer.name}</h3>
-                      <p className="text-sm text-muted-foreground">{freelancer.title}</p>
+                      <h3 className="font-semibold">{freelancer.username}</h3>
+                      <p className="text-sm text-muted-foreground">{profile.title || 'Freelancer'}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="flex items-center gap-1 text-sm">
                       <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span>{freelancer.rating}</span>
+                      <span>{profile.rating || 'New'}</span>
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {freelancer.completedProjects} projects
+                      {profile.completedProjects || 0} projects
                     </div>
                   </div>
                 </div>
 
                 <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                  {freelancer.bio}
+                  {profile.bio || 'Professional freelancer ready to work on your project.'}
                 </p>
 
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                   <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4" />
-                    {freelancer.location}
-                  </div>
-                  <div className="flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
-                    ${freelancer.hourlyRate}/hr
+                    ${profile.hourlyRate || 0}/hr
                   </div>
                 </div>
 
                 <div className="flex flex-wrap gap-1 mb-4">
-                  {freelancer.skills.slice(0, 3).map((skill, index) => (
+                  {(profile.skills || []).slice(0, 3).map((skill, index) => (
                     <Badge key={index} variant="secondary" className="text-xs">
                       {skill}
                     </Badge>
                   ))}
-                  {freelancer.skills.length > 3 && (
+                  {(profile.skills || []).length > 3 && (
                     <Badge variant="outline" className="text-xs">
-                      +{freelancer.skills.length - 3} more
+                      +{(profile.skills || []).length - 3} more
                     </Badge>
                   )}
                 </div>
 
                 <div className="flex gap-2">
                   <Button asChild className="flex-1">
-                    <Link to={`/freelancer-profile/${freelancer.id}`}>
-                      View Profile
-                    </Link>
+                    <Link to={`/freelancer/${freelancer._id}`}>View Profile</Link>
                   </Button>
                   {canInvite && (
-                    <Button variant="outline" asChild>
-                      <Link to={`/invite-freelancer/${freelancer.id}`}>
-                        Invite
-                      </Link>
+                    <Button variant="outline">
+                      Invite
                     </Button>
                   )}
                 </div>
               </CardContent>
             </Card>
-          ))}
+          )})}
         </div>
 
         {filteredFreelancers.length === 0 && (

@@ -36,11 +36,6 @@ router.route("/register").post(
             maxCount: 1
         }
     ]), 
-    (req, res, next) => {
-        console.log("Register route hit");
-        console.log("Request body:", req.body);
-        next();
-    },
     userRegisterValidator(),
     validate, 
     registerUser
@@ -49,11 +44,6 @@ router.route("/register").post(
 //User login route
 //Validates request body first, then logs in the user
 router.route("/login").post(
-    (req, res, next) => {
-        console.log("Login route hit");
-        console.log("Request body:", req.body);
-        next();
-    },
     userLoginValidator(), 
     validate, 
     login

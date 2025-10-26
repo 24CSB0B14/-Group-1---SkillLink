@@ -29,78 +29,15 @@ const SearchJobs = () => {
     try {
       setLoading(true);
       const response = await jobService.getAllJobs();
-      // Use actual API response data
       const jobsData = response.data || response;
       setJobs(jobsData);
     } catch (error) {
-      console.error("Failed to fetch jobs:", error);
       toast.error("Failed to load jobs");
-      // Fallback to mock data if API fails
-      setJobs(mockJobs);
+      setJobs([]);
     } finally {
       setLoading(false);
     }
   };
-
-  const mockJobs = [
-    {
-      _id: "SKL-001",
-      title: "Senior UI/UX Designer for Mobile App",
-      description: "We need an experienced UI/UX designer to redesign our mobile banking application with focus on user experience and modern design principles.",
-      budget: 5000,
-      budgetType: "fixed",
-      category: "UI/UX Design",
-      experienceLevel: "expert",
-      skills: ["Figma", "UI/UX Design", "Mobile Design", "Prototyping"],
-      client: {
-        name: "Tech Innovations Inc.",
-        rating: 4.8,
-        totalSpent: 45200
-      },
-      proposals: 12,
-      duration: "3-4 weeks",
-      posted: "2 days ago",
-      featured: true
-    },
-    {
-      _id: "SKL-002",
-      title: "Full-Stack React Developer",
-      description: "Looking for a full-stack developer to build a responsive web application with React frontend and Node.js backend.",
-      budget: 45,
-      budgetType: "hourly",
-      category: "Web Development",
-      experienceLevel: "intermediate",
-      skills: ["React", "Node.js", "MongoDB", "TypeScript"],
-      client: {
-        name: "Startup Ventures",
-        rating: 4.6,
-        totalSpent: 12800
-      },
-      proposals: 8,
-      duration: "1-3 months",
-      posted: "1 day ago",
-      featured: false
-    },
-    {
-      _id: "SKL-003",
-      title: "Content Writer for Tech Blog",
-      description: "Need a skilled content writer to create engaging articles about technology trends and software development.",
-      budget: 1200,
-      budgetType: "fixed",
-      category: "Writing",
-      experienceLevel: "intermediate",
-      skills: ["Content Writing", "SEO", "Technology", "Blogging"],
-      client: {
-        name: "Tech Blog Media",
-        rating: 4.9,
-        totalSpent: 8900
-      },
-      proposals: 5,
-      duration: "2 weeks",
-      posted: "5 hours ago",
-      featured: true
-    }
-  ];
 
   const categories = [
     "Web Development",
@@ -243,23 +180,16 @@ const SearchJobs = () => {
                     <div className="flex items-center gap-6 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <DollarSign className="w-4 h-4" />
-                        <span>
-                          {job.budgetType === 'hourly' ? `$${job.budget}/hr` : `$${job.budget} fixed`}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{job.duration || "Not specified"}</span>
+                        <span>${job.budget} fixed</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{job.posted || "Recently"}</span>
+                        <span>{new Date(job.createdAt).toLocaleDateString()}</span>
                       </div>
-                      <span>{job.proposals || 0} proposals</span>
                     </div>
                   </div>
 
-                  {canApply && (
+                  {canApply ? (
                     <div className="flex flex-col gap-2 ml-4">
                       <Button asChild>
                         <Link to={`/job-details/${job._id}`}>
@@ -270,6 +200,15 @@ const SearchJobs = () => {
                         <Link to={`/job-details/${job._id}`}>
                           View Details
                         </Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2 ml-4">
+                      <Button variant="outline">
+                        Accept Job
+                      </Button>
+                      <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground">
+                        Reject Job
                       </Button>
                     </div>
                   )}

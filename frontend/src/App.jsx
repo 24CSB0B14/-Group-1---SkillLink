@@ -11,8 +11,6 @@ import Signup from "./pages/Signup";
 import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
-import TestForgotPassword from "./pages/TestForgotPassword";
-import TestMyJobs from "./pages/TestMyJobs";
 import Onboarding from "./pages/Onboarding";
 import EditProfile from "./pages/EditProfile";
 import ClientDashboard from "./pages/ClientDashboard";
@@ -39,9 +37,9 @@ import DisputeResolution from "./pages/DisputeResolution";
 import SearchJobs from "./pages/SearchJobs";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
+import FreelancerEarnings from "./pages/FreelancerEarnings";
 
-// Test Page
-import APITestPage from "./pages/APITestPage";
+
 
 const queryClient = new QueryClient();
 
@@ -59,8 +57,6 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:resetToken" element={<ResetPassword />} />
-            <Route path="/test-forgot-password" element={<TestForgotPassword />} />
-            <Route path="/test-my-jobs" element={<TestMyJobs />} />
             
             {/* Protected routes - Client only */}
             <Route 
@@ -245,16 +241,16 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
-
-            {/* Test Page */}
             <Route 
-              path="/api-test" 
+              path="/freelancer-earnings" 
               element={
-                <ProtectedRoute>
-                  <APITestPage />
+                <ProtectedRoute allowedRoles="freelancer">
+                  <FreelancerEarnings />
                 </ProtectedRoute>
               } 
             />
+
+
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -1,82 +1,75 @@
 // pages/Notifications.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Bell, CheckCircle, AlertTriangle, Info, MessageCircle, DollarSign, FileText } from "lucide-react";
+import { toast } from "sonner";
+import notificationService from "@/services/notification.service";
 
 const Notifications = () => {
-  const [notifications, setNotifications] = useState({
-    unread: [
-      {
-        id: 1,
-        type: "bid",
-        title: "New Bid Received",
-        message: "Sarah Chen submitted a bid for your Mobile App UI/UX Design project",
-        time: "5 minutes ago",
-        read: false,
-        action: "/job-details/SKL-001"
-      },
-      {
-        id: 2,
-        type: "message",
-        title: "New Message",
-        message: "Mike Rodriguez sent you a message regarding the Website Development project",
-        time: "1 hour ago",
-        read: false,
-        action: "/chat/CTR-002"
-      },
-      {
-        id: 3,
-        type: "payment",
-        title: "Payment Received",
-        message: "Payment of $1,200 has been released to your wallet",
-        time: "2 hours ago",
-        read: false,
-        action: "/wallet"
-      }
-    ],
-    read: [
-      {
-        id: 4,
-        type: "contract",
-        title: "Contract Started",
-        message: "Your contract with Tech Innovations Inc. has begun",
-        time: "1 day ago",
-        read: true,
-        action: "/contract/CTR-001"
-      },
-      {
-        id: 5,
-        type: "review",
-        title: "New Review",
-        message: "John Smith left you a 5-star review",
-        time: "2 days ago",
-        read: true,
-        action: "/reviews"
-      }
-    ]
-  });
+  const [notifications, setNotifications] = useState({ unread: [], read: [] });
+  const [loading, setLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-  const markAsRead = (id) => {
-    setNotifications(prev => {
-      const notification = prev.unread.find(n => n.id === id);
-      if (notification) {
-        return {
-          unread: prev.unread.filter(n => n.id !== id),
-          read: [...prev.read, { ...notification, read: true }]
-        };
-      }
-      return prev;
-    });
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(true);
+      const response = await notificationService.getNotifications();
+      const data = response.data || response;
+      
+      const unreadNotifs = data.notifications.filter(n => !n.isRead);
+      const readNotifs = data.notifications.filter(n => n.isRead);
+      
+      setNotifications({
+        unread: unreadNotifs,
+        read: readNotifs
+      });
+      setUnreadCount(data.unreadCount || unreadNotifs.length);
+    } catch (error) {
+      toast.error("Failed to load notifications");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => ({
-      unread: [],
-      read: [...prev.read, ...prev.unread.map(n => ({ ...n, read: true }))]
-    }));
+  const markAsRead = async (id) => {
+    try {
+      await notificationService.markAsRead(id);
+      setNotifications(prev => {
+        const notification = prev.unread.find(n => n._id === id);
+        if (notification) {
+          return {
+            unread: prev.unread.filter(n => n._id !== id),
+            read: [{ ...notification, isRead: true }, ...prev.read]
+          };
+        }
+        return prev;
+      });
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      toast.success("Notification marked as read");
+    } catch (error) {
+      toast.error("Failed to mark as read");
+    }
+  };
+
+  const markAllAsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setNotifications(prev => ({
+        unread: [],
+        read: [...prev.unread.map(n => ({ ...n, isRead: true })), ...prev.read]
+      }));
+      setUnreadCount(0);
+      toast.success("All notifications marked as read");
+    } catch (error) {
+      toast.error("Failed to mark all as read");
+    }
   };
 
   const getIcon = (type) => {
@@ -131,6 +124,7 @@ const Notifications = () => {
                   notification={notification}
                   onMarkAsRead={markAsRead}
                   getIcon={getIcon}
+                  getRelativeTime={getRelativeTime}
                 />
               ))
             ) : (
@@ -148,9 +142,10 @@ const Notifications = () => {
           <TabsContent value="read" className="space-y-4">
             {notifications.read.map((notification) => (
               <NotificationCard
-                key={notification.id}
+                key={notification._id}
                 notification={notification}
                 getIcon={getIcon}
+                getRelativeTime={getRelativeTime}
               />
             ))}
           </TabsContent>
@@ -173,8 +168,8 @@ const Notifications = () => {
 };
 
 // Notification Card Component
-const NotificationCard = ({ notification, onMarkAsRead, getIcon }) => (
-  <Card className={`transition hover:shadow-md ${!notification.read ? 'border-primary/20 bg-primary/5' : ''}`}>
+const NotificationCard = ({ notification, onMarkAsRead, getIcon, getRelativeTime }) => (
+  <Card className={`transition hover:shadow-md ${!notification.isRead ? 'border-primary/20 bg-primary/5' : ''}`}>
     <CardContent className="p-4">
       <div className="flex items-start gap-4">
         <div className="flex-shrink-0 mt-1">
@@ -185,12 +180,12 @@ const NotificationCard = ({ notification, onMarkAsRead, getIcon }) => (
           <div className="flex items-start justify-between mb-1">
             <h4 className="font-semibold text-sm">{notification.title}</h4>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{notification.time}</span>
-              {!notification.read && onMarkAsRead && (
+              <span className="text-xs text-muted-foreground">{getRelativeTime(notification.createdAt)}</span>
+              {!notification.isRead && onMarkAsRead && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onMarkAsRead(notification.id)}
+                  onClick={() => onMarkAsRead(notification._id)}
                   className="h-6 px-2 text-xs"
                 >
                   Mark read
@@ -203,12 +198,14 @@ const NotificationCard = ({ notification, onMarkAsRead, getIcon }) => (
             {notification.message}
           </p>
           
-          <Button asChild variant="outline" size="sm">
-            <a href={notification.action}>View Details</a>
-          </Button>
+          {notification.actionUrl && (
+            <Button asChild variant="outline" size="sm">
+              <a href={notification.actionUrl}>View Details</a>
+            </Button>
+          )}
         </div>
 
-        {!notification.read && (
+        {!notification.isRead && (
           <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />
         )}
       </div>

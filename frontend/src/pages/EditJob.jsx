@@ -10,11 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import jobService from "@/services/job.service";
 import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/context/AuthContext";
 
 const EditJob = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isClient } = useRole();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   
@@ -43,13 +45,13 @@ const EditJob = () => {
   ];
 
   useEffect(() => {
-    if (!isClient()) {
+    if (user && user.role !== "client") {
       navigate("/search-jobs");
       return;
     }
     
     fetchJobDetails();
-  }, [id, isClient, navigate]);
+  }, [id, user, navigate]);
 
   const fetchJobDetails = async () => {
     try {

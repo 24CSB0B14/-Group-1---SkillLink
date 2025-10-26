@@ -70,21 +70,18 @@ const jobSchema = new Schema({
 
 // Add pre-validation hook to log validation errors
 jobSchema.pre('validate', function(next) {
-    console.log('Validating job document:', this.toObject());
     next();
 });
 
 // Add post-validation hook to log validation results
 jobSchema.post('validate', function(doc, next) {
-    console.log('Job document validated successfully:', doc.toObject());
     next();
 });
 
 // Add error handling for validation
 jobSchema.post('save', function(error, doc, next) {
     if (error.name === 'ValidationError') {
-        console.error('Job validation error:', error.message);
-        console.error('Job validation error details:', error.errors);
+        // Handle validation error silently
     }
     next(error);
 });

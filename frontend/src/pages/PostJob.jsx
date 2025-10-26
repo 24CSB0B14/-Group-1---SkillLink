@@ -109,15 +109,10 @@ const PostJob = () => {
         deadline: formData.deadline
       };
 
-      console.log("Sending job data:", jobData);
-      
       const response = await jobService.createJob(jobData);
-      console.log("Job posted:", response);
       toast.success("Job posted successfully!");
       navigate("/client-dashboard");
     } catch (error) {
-      console.error("Error posting job:", error);
-      console.error("Error response:", error.response);
       toast.error(error.message || "Failed to post job. Please try again.");
     } finally {
       setLoading(false);

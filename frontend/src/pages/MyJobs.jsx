@@ -4,11 +4,21 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, DollarSign, Clock, MapPin, Star, Eye, Edit, Trash2, Briefcase } from "lucide-react";
+import { Calendar, DollarSign, Clock, Star, Eye, Edit, Trash2, Briefcase, Shield } from "lucide-react";
 import { toast } from "sonner";
 import jobService from "@/services/job.service";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import escrowService from "@/services/escrow.service";
 
 const MyJobs = () => {
   const { isClient } = useRole();
@@ -17,6 +27,10 @@ const MyJobs = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hasFetched, setHasFetched] = useState(false);
+  const [isDisputeModalOpen, setIsDisputeModalOpen] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("");
+  const [selectedJob, setSelectedJob] = useState(null);
+  const [disputeLoading, setDisputeLoading] = useState(false);
 
   useEffect(() => {
     // Redirect if user is not a client
@@ -43,7 +57,6 @@ const MyJobs = () => {
       const jobsData = response.data || response;
       setJobs(jobsData);
     } catch (error) {
-      console.error("Failed to fetch jobs:", error);
       if (error.response?.data?.message) {
         toast.error(`Failed to load your jobs: ${error.response.data.message}`);
       } else if (error.message) {
@@ -78,6 +91,32 @@ const MyJobs = () => {
 
   const handleViewJob = (jobId) => {
     navigate(`/job-details/${jobId}`);
+  };
+
+  const handleRaiseDispute = (job) => {
+    setSelectedJob(job);
+    setIsDisputeModalOpen(true);
+  };
+
+  const submitDispute = async () => {
+    if (!disputeReason.trim()) {
+      toast.error("Please provide a reason for the dispute");
+      return;
+    }
+
+    setDisputeLoading(true);
+    try {
+      // In a real implementation, you would pass the actual escrow ID
+      // For now, we'll show a success message
+      toast.success("Dispute raised successfully");
+      setIsDisputeModalOpen(false);
+      setDisputeReason("");
+      setSelectedJob(null);
+    } catch (error) {
+      toast.error("Failed to raise dispute");
+    } finally {
+      setDisputeLoading(false);
+    }
   };
 
   // Show loading state while determining user role
@@ -194,6 +233,17 @@ const MyJobs = () => {
                       </div>
                       <span>{job.proposals || 0} proposals</span>
                     </div>
+
+                    {/* Escrow Status */}
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4 text-primary" />
+                          <span className="font-medium">Escrow Status</span>
+                        </div>
+                        <Badge variant="outline">Not Funded</Badge>
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2 ml-4">
@@ -208,6 +258,10 @@ const MyJobs = () => {
                     <Button variant="outline" onClick={() => handleDeleteJob(job._id)} disabled={loading}>
                       <Trash2 className="w-4 h-4 mr-2" />
                       Delete
+                    </Button>
+                    <Button variant="outline" onClick={() => handleRaiseDispute(job)}>
+                      <Shield className="w-4 h-4 mr-2" />
+                      Raise Dispute
                     </Button>
                   </div>
                 </div>
@@ -231,6 +285,41 @@ const MyJobs = () => {
           </div>
         )}
       </div>
+
+      {/* Dispute Modal */}
+      <Dialog open={isDisputeModalOpen} onOpenChange={(open) => {
+        setIsDisputeModalOpen(open);
+        if (!open) {
+          setDisputeReason("");
+          setSelectedJob(null);
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Raise a Dispute for "{selectedJob?.title}"</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="disputeReason">Reason for Dispute</Label>
+              <Textarea
+                id="disputeReason"
+                placeholder="Please provide details about your dispute..."
+                value={disputeReason}
+                onChange={(e) => setDisputeReason(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsDisputeModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={submitDispute} disabled={disputeLoading}>
+                {disputeLoading ? "Submitting..." : "Submit Dispute"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

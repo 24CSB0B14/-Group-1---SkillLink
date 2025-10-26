@@ -7,89 +7,55 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Shield, Users, AlertTriangle, TrendingUp, DollarSign, FileText, MessageCircle } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import adminService from "@/services/admin.service";
+import disputeService from "@/services/dispute.service";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({});
   const [disputes, setDisputes] = useState([]);
   const [users, setUsers] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isResolutionModalOpen, setIsResolutionModalOpen] = useState(false);
+  const [selectedDispute, setSelectedDispute] = useState(null);
+  const [resolutionNotes, setResolutionNotes] = useState("");
+  const [resolutionDecision, setResolutionDecision] = useState("");
+  const [resolutionLoading, setResolutionLoading] = useState(false);
 
   useEffect(() => {
-    // Simulate API calls
-    const mockStats = {
-      totalUsers: 1247,
-      activeContracts: 89,
-      pendingDisputes: 12,
-      totalRevenue: 28450,
-      platformFee: 2845
-    };
-
-    const mockDisputes = [
-      {
-        id: "DSP-001",
-        contractId: "CTR-045",
-        client: "John Smith",
-        freelancer: "Sarah Chen",
-        amount: 2500,
-        reason: "Quality of work not meeting expectations",
-        status: "pending",
-        createdAt: "2025-01-20"
-      },
-      {
-        id: "DSP-002",
-        contractId: "CTR-067",
-        client: "Tech Corp",
-        freelancer: "Mike Rodriguez",
-        amount: 1800,
-        reason: "Missed deadline without communication",
-        status: "in-review",
-        createdAt: "2025-01-19"
-      }
-    ];
-
-    const mockUsers = [
-      {
-        id: 1,
-        name: "Sarah Chen",
-        email: "sarah@example.com",
-        role: "freelancer",
-        status: "verified",
-        joinDate: "2024-06-15"
-      },
-      {
-        id: 2,
-        name: "John Smith",
-        email: "john@techcorp.com",
-        role: "client",
-        status: "pending",
-        joinDate: "2025-01-10"
-      }
-    ];
-
-    const mockTransactions = [
-      {
-        id: "TXN-001",
-        contractId: "CTR-045",
-        amount: 2500,
-        type: "escrow_deposit",
-        status: "completed",
-        date: "2025-01-15"
-      },
-      {
-        id: "TXN-002",
-        contractId: "CTR-067",
-        amount: 1800,
-        type: "payout",
-        status: "completed",
-        date: "2025-01-18"
-      }
-    ];
-
-    setStats(mockStats);
-    setDisputes(mockDisputes);
-    setUsers(mockUsers);
-    setTransactions(mockTransactions);
+    fetchAllData();
   }, []);
+
+  const fetchAllData = async () => {
+    try {
+      setLoading(true);
+      const [statsRes, disputesRes, usersRes, transactionsRes] = await Promise.all([
+        adminService.getDashboardStats(),
+        adminService.getAllDisputes(),
+        adminService.getAllUsers({ limit: 10 }),
+        adminService.getAllTransactions()
+      ]);
+
+      setStats(statsRes.data || {});
+      setDisputes(disputesRes.data || []);
+      setUsers(usersRes.data?.users || []);
+      setTransactions(transactionsRes.data || []);
+    } catch (error) {
+      toast.error("Failed to load dashboard data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -100,6 +66,62 @@ const AdminDashboard = () => {
       default: return 'bg-secondary';
     }
   };
+
+  const handleOpenResolution = (dispute) => {
+    setSelectedDispute(dispute);
+    setIsResolutionModalOpen(true);
+  };
+
+  const handleResolveDispute = async () => {
+    if (!resolutionDecision || !resolutionNotes.trim()) {
+      toast.error("Please select a decision and add resolution notes");
+      return;
+    }
+
+    setResolutionLoading(true);
+    try {
+      await disputeService.resolveDispute(selectedDispute._id, {
+        decision: resolutionDecision,
+        resolution: resolutionNotes
+      });
+      toast.success(`Dispute resolved: ${resolutionDecision}`);
+      setIsResolutionModalOpen(false);
+      setResolutionNotes("");
+      setResolutionDecision("");
+      setSelectedDispute(null);
+      fetchAllData(); // Refresh data
+    } catch (error) {
+      toast.error("Failed to resolve dispute");
+    } finally {
+      setResolutionLoading(false);
+    }
+  };
+
+  const handleReleaseEscrow = async (escrowId) => {
+    if (window.confirm("Are you sure you want to release this escrow?")) {
+      try {
+        await escrowService.releaseEscrow(escrowId);
+        toast.success("Escrow released successfully");
+        fetchAllData();
+      } catch (error) {
+        toast.error("Failed to release escrow");
+      }
+    }
+  };
+
+  const handleRefundClient = async (escrowId) => {
+    if (window.confirm("Are you sure you want to refund the client?")) {
+      try {
+        await escrowService.refundClient(escrowId);
+        toast.success("Client refunded successfully");
+        fetchAllData();
+      } catch (error) {
+        toast.error("Failed to refund client");
+      }
+    }
+  };
+
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -217,10 +239,8 @@ const AdminDashboard = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button size="sm" asChild>
-                            <a href={`/dispute-resolution/${dispute.id}`}>
-                              Review
-                            </a>
+                          <Button size="sm" onClick={() => handleOpenResolution(dispute)}>
+                            Review
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -251,15 +271,15 @@ const AdminDashboard = () => {
                   </TableHeader>
                   <TableBody>
                     {users.map((user) => (
-                      <TableRow key={user.id}>
+                      <TableRow key={user._id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar className="w-8 h-8">
                               <AvatarFallback>
-                                {user.name.split(' ').map(n => n[0]).join('')}
+                                {user.username?.charAt(0).toUpperCase() || 'U'}
                               </AvatarFallback>
                             </Avatar>
-                            <span>{user.name}</span>
+                            <span>{user.username || user.email}</span>
                           </div>
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
@@ -270,17 +290,14 @@ const AdminDashboard = () => {
                         </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(user.status)}>
-                            {user.status}
+                            {user.status || 'active'}
                           </Badge>
                         </TableCell>
-                        <TableCell>{user.joinDate}</TableCell>
+                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <div className="flex gap-2">
                             <Button size="sm" variant="outline">
-                              Verify
-                            </Button>
-                            <Button size="sm" variant="outline">
-                              Message
+                              View
                             </Button>
                           </div>
                         </TableCell>
@@ -308,25 +325,40 @@ const AdminDashboard = () => {
                       <TableHead>Type</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {transactions.map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell className="font-medium">{transaction.id}</TableCell>
-                        <TableCell>{transaction.contractId}</TableCell>
+                      <TableRow key={transaction._id}>
+                        <TableCell className="font-medium">{transaction._id?.slice(-8)}</TableCell>
+                        <TableCell>{transaction.job?.title || 'N/A'}</TableCell>
                         <TableCell>${transaction.amount}</TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {transaction.type}
+                            {transaction.paymentType || 'escrow'}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge className="bg-success text-white">
+                          <Badge className={getStatusColor(transaction.status)}>
                             {transaction.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{transaction.date}</TableCell>
+                        <TableCell>{new Date(transaction.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <div className="flex gap-2">
+                            {transaction.status === 'pending' && (
+                              <>
+                                <Button size="sm" onClick={() => handleReleaseEscrow(transaction._id)}>
+                                  Release
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => handleRefundClient(transaction._id)}>
+                                  Refund
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -377,6 +409,118 @@ const AdminDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dispute Resolution Modal */}
+      <Dialog open={isResolutionModalOpen} onOpenChange={(open) => {
+        setIsResolutionModalOpen(open);
+        if (!open) {
+          setResolutionNotes("");
+          setResolutionDecision("");
+          setSelectedDispute(null);
+        }
+      }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Resolve Dispute #{selectedDispute?.id}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6">
+            {selectedDispute && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-semibold">Contract</h4>
+                    <p className="text-sm">{selectedDispute.contractId}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Amount</h4>
+                    <p className="text-sm">${selectedDispute.amount}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Client</h4>
+                    <p className="text-sm">{selectedDispute.client}</p>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Freelancer</h4>
+                    <p className="text-sm">{selectedDispute.freelancer}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="font-semibold">Reason</h4>
+                  <p className="text-sm text-muted-foreground">{selectedDispute.reason}</p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Decision</Label>
+              <div className="space-y-2">
+                {[
+                  { value: "client", label: "Award to Client (Full Refund)" },
+                  { value: "freelancer", label: "Award to Freelancer (Full Payment)" },
+                  { value: "split", label: "Split Payment" },
+                  { value: "continue", label: "Continue Work" }
+                ].map((option) => (
+                  <label key={option.value} className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="decision"
+                      value={option.value}
+                      checked={resolutionDecision === option.value}
+                      onChange={(e) => setResolutionDecision(e.target.value)}
+                      className="text-primary focus:ring-primary"
+                    />
+                    <span className="text-sm">{option.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Resolution Notes</Label>
+              <Textarea
+                placeholder="Explain your decision and any additional notes..."
+                rows={6}
+                value={resolutionNotes}
+                onChange={(e) => setResolutionNotes(e.target.value)}
+                required
+              />
+            </div>
+
+            {resolutionDecision === "split" && (
+              <div>
+                <Label className="text-sm font-medium mb-2 block">Split Amount</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Client</Label>
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      className="w-full p-2 border rounded text-sm"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Freelancer</Label>
+                    <input
+                      type="number"
+                      placeholder="Amount"
+                      className="w-full p-2 border rounded text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setIsResolutionModalOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleResolveDispute} disabled={resolutionLoading || !resolutionDecision || !resolutionNotes.trim()}>
+                {resolutionLoading ? "Submitting..." : "Submit Resolution"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

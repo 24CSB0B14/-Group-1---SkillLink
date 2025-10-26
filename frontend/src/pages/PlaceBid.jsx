@@ -1,5 +1,5 @@
 // pages/PlaceBid.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,7 +16,7 @@ import { useAuth } from "@/context/AuthContext";
 const PlaceBid = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isFreelancer } = useRole();
+  const { isFreelancer, userRole } = useRole();
   const { isAuthenticated, user } = useAuth();
   const [job, setJob] = useState(null);
   const [bidData, setBidData] = useState({
@@ -27,29 +27,35 @@ const PlaceBid = () => {
   });
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Check if user is authenticated and is a freelancer
+  // Memoize the freelancer check to prevent infinite loops
+  const checkFreelancerAccess = useCallback(() => {
     if (!isAuthenticated) {
       toast.error("Please login to place a bid");
       navigate("/login");
-      return;
+      return false;
     }
     
-    // Additional check to ensure we have user data
     if (!user) {
       toast.error("User data not available");
       navigate("/login");
-      return;
+      return false;
     }
     
-    if (!isFreelancer()) {
+    if (userRole !== "freelancer") {
       toast.error("Only freelancers can place bids");
       navigate("/job-details/" + id);
-      return;
+      return false;
     }
     
-    fetchJobDetails();
-  }, [id, isAuthenticated, isFreelancer, navigate, user]);
+    return true;
+  }, [isAuthenticated, user, userRole, id, navigate]);
+
+  useEffect(() => {
+    const hasAccess = checkFreelancerAccess();
+    if (hasAccess) {
+      fetchJobDetails();
+    }
+  }, [checkFreelancerAccess]);
 
   const fetchJobDetails = async () => {
     try {
@@ -59,7 +65,6 @@ const PlaceBid = () => {
       const jobData = response.data || response;
       setJob(jobData);
     } catch (error) {
-      console.error("Failed to fetch job details:", error);
       toast.error("Failed to load job details");
       // Fallback to mock data if API fails
       setJob(mockJob);
@@ -81,23 +86,20 @@ const PlaceBid = () => {
     try {
       const bidPayload = {
         amount: parseFloat(bidData.amount),
-        timeline: bidData.timeline,
-        proposal: bidData.proposal
+        coverLetter: bidData.proposal  // Map proposal to coverLetter for backend
       };
 
       const response = await bidService.placeBid(id, bidPayload);
-      console.log("Bid submitted:", response);
       toast.success("Bid submitted successfully!");
       navigate("/job-details/" + id);
     } catch (error) {
-      console.error("Failed to submit bid:", error);
       toast.error(error.message || "Failed to submit bid. Please try again.");
     }
   };
 
   // Show access denied message if user is not a freelancer
   // Additional check to ensure we have user data
-  if (!isAuthenticated || !user || !isFreelancer()) {
+  if (!isAuthenticated || !user || userRole !== "freelancer") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">

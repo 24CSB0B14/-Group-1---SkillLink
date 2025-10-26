@@ -10,8 +10,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
 
     //If no token is provided, throw unauthorized error
     if (!token) {
-        console.log("../backend/src/middlewares/auth.middleware.js")
-        throw new ApiError(401, "Unauthorised request")
+        throw new ApiError(401, "Unauthorized request - No token provided")
     }
 
     try {
@@ -25,8 +24,7 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
         );
 
         if (!user) {
-            console.log("../backend/src/middlewares/auth.middleware.js")
-            throw new ApiError(401, "Invalid Access Token")
+            throw new ApiError(401, "Invalid Access Token - User not found")
         }
 
         //Attach the user object to req so that downstream controllers can access it
@@ -36,7 +34,28 @@ export const verifyJWT = asyncHandler(async (req, res, next) => {
         next()
     } 
     catch (error) {
-        console.log("../backend/src/middlewares/auth.middleware.js")
-        throw new ApiError(401, "Invalid Access Token")
+        if (error.name === 'TokenExpiredError') {
+            throw new ApiError(401, "Token expired - Please log in again")
+        } else if (error.name === 'JsonWebTokenError') {
+            throw new ApiError(401, "Invalid token format - Please log in again")
+        } else {
+            throw new ApiError(401, "Invalid Access Token - Please log in again")
+        }
     }
+})
+
+// Middleware to check if user is admin
+export const isAdmin = asyncHandler(async (req, res, next) => {
+    // Check if user is authenticated
+    if (!req.user) {
+        throw new ApiError(401, "User not authenticated")
+    }
+
+    // Check if user role is admin
+    if (req.user.role !== "admin") {
+        throw new ApiError(403, "Access denied. Admin rights required.")
+    }
+
+    // Pass control to the next middleware/controller
+    next()
 })

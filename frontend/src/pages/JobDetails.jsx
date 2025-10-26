@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, DollarSign, Clock, MapPin, User, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import jobService from "@/services/job.service";
+import bidService from "@/services/bid.service";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
 
@@ -23,77 +24,43 @@ const JobDetails = () => {
 
   useEffect(() => {
     fetchJobDetails();
+    fetchBids();
   }, [id]);
 
   const fetchJobDetails = async () => {
     try {
       setLoading(true);
       const response = await jobService.getJobById(id);
-      // Use actual API response data
       const jobData = response.data || response;
       setJob(jobData);
-      
-      // For now, we'll use mock bids since there's no bids API yet
-      // In a real implementation, this would come from the API
-      setBids(mockBids);
     } catch (error) {
-      console.error("Failed to fetch job details:", error);
       toast.error("Failed to load job details");
-      // Fallback to mock data if API fails
-      setJob(mockJob);
-      setBids(mockBids);
     } finally {
       setLoading(false);
     }
   };
 
-  const mockJob = {
-    _id: "SKL-001",
-    title: "Senior UI/UX Designer for Mobile App",
-    description: "We're looking for an experienced UI/UX designer to redesign our mobile banking application. The ideal candidate should have experience in financial apps and a strong portfolio of mobile design work.",
-    budget: 5000,
-    budgetType: "fixed",
-    deadline: "2025-02-15",
-    skills: ["Figma", "UI/UX Design", "Mobile Design", "Prototyping", "User Research"],
-    category: "UI/UX Design",
-    experienceLevel: "expert",
-    client: {
-      name: "Tech Innovations Inc.",
-      rating: 4.8,
-      completedProjects: 24
-    },
-    status: "open",
-    postedDate: "2025-01-10"
+  const fetchBids = async () => {
+    try {
+      const response = await bidService.getBidsForJob(id);
+      const bidsData = response.data || response;
+      setBids(bidsData);
+    } catch (error) {
+      toast.error("Failed to load bids");
+      setBids([]);
+    }
   };
 
-  const mockBids = [
-    {
-      id: 1,
-      freelancer: {
-        name: "Sarah Chen",
-        avatar: "",
-        rating: 4.9,
-        skills: ["UI/UX Design", "Figma", "Prototyping"]
-      },
-      amount: 4500,
-      timeline: "3 weeks",
-      proposal: "I have extensive experience in financial app design and can deliver a modern, user-friendly interface.",
-      submittedDate: "2025-01-11"
-    },
-    {
-      id: 2,
-      freelancer: {
-        name: "Mike Rodriguez",
-        avatar: "",
-        rating: 4.7,
-        skills: ["Mobile Design", "UI/UX", "Adobe XD"]
-      },
-      amount: 5200,
-      timeline: "4 weeks",
-      proposal: "I specialize in mobile banking apps and can provide research-backed design solutions.",
-      submittedDate: "2025-01-12"
+  const handleAcceptBid = async (bidId) => {
+    try {
+      await bidService.acceptBid(bidId);
+      toast.success("Bid accepted successfully!");
+      fetchJobDetails();
+      fetchBids();
+    } catch (error) {
+      toast.error(error.message || "Failed to accept bid");
     }
-  ];
+  };
 
   if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   if (!job) return <div className="min-h-screen bg-background flex items-center justify-center">Job not found</div>;
@@ -119,10 +86,10 @@ const JobDetails = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        Posted {job.postedDate}
+                        Posted {new Date(job.createdAt).toLocaleDateString()}
                       </div>
-                      <Badge variant={job.status === "open" ? "success" : "secondary"}>
-                        {job.status?.toUpperCase() || "OPEN"}
+                      <Badge variant={job.status === "ACTIVE" ? "success" : "secondary"}>
+                        {job.status || "ACTIVE"}
                       </Badge>
                     </div>
                   </div>
@@ -156,11 +123,11 @@ const JobDetails = () => {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-muted-foreground" />
-                    <span>Budget: ${job.budget} ({job.budgetType})</span>
+                    <span>Budget: ${job.budget} (fixed)</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Deadline: {job.deadline || "Not specified"}</span>
+                    <span>Deadline: {job.deadline ? new Date(job.deadline).toLocaleDateString() : "Not specified"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-muted-foreground" />
@@ -176,42 +143,53 @@ const JobDetails = () => {
                 <CardTitle>Proposals ({bids.length})</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {bids.map((bid) => (
-                    <div key={bid.id} className="border rounded-lg p-4 hover:border-primary/50 transition">
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={bid.freelancer.avatar} />
-                            <AvatarFallback>
-                              {bid.freelancer.name.split(' ').map(n => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h4 className="font-semibold">{bid.freelancer.name}</h4>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                              <span>⭐ {bid.freelancer.rating}</span>
-                              <span>•</span>
-                              <span>Submitted {bid.submittedDate}</span>
+                {bids.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No proposals yet. Be the first to bid!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {bids.map((bid) => (
+                      <div key={bid._id} className="border rounded-lg p-4 hover:border-primary/50 transition">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={bid.freelancer?.avatar?.url} />
+                              <AvatarFallback>
+                                {bid.freelancer?.username?.substring(0, 2).toUpperCase() || "FL"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <h4 className="font-semibold">{bid.freelancer?.username || "Freelancer"}</h4>
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <span>Submitted {new Date(bid.createdAt).toLocaleDateString()}</span>
+                                <span>•</span>
+                                <Badge variant={bid.status === "accepted" ? "success" : bid.status === "rejected" ? "destructive" : "secondary"}>
+                                  {bid.status?.toUpperCase()}
+                                </Badge>
+                              </div>
                             </div>
                           </div>
+                          <div className="text-right">
+                            <div className="text-xl font-bold text-primary">${bid.amount}</div>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-xl font-bold text-primary">${bid.amount}</div>
-                          <div className="text-sm text-muted-foreground">{bid.timeline}</div>
-                        </div>
+                        {bid.coverLetter && (
+                          <p className="text-muted-foreground mb-3">{bid.coverLetter}</p>
+                        )}
+                        {user && job.client && job.client._id === user._id && bid.status === "pending" && (
+                          <Button 
+                            onClick={() => handleAcceptBid(bid._id)}
+                            className="mt-2"
+                            size="sm"
+                          >
+                            Accept Bid
+                          </Button>
+                        )}
                       </div>
-                      <p className="text-muted-foreground mb-3">{bid.proposal}</p>
-                      <div className="flex flex-wrap gap-1">
-                        {bid.freelancer.skills.map((skill, index) => (
-                          <Badge key={index} variant="secondary" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -226,21 +204,20 @@ const JobDetails = () => {
               <CardContent className="space-y-4">
                 <div className="flex items-center gap-3">
                   <Avatar>
+                    <AvatarImage src={job.client?.avatar?.url} />
                     <AvatarFallback className="bg-primary/20 text-primary">
-                      {job.client?.name?.split(' ').map(n => n[0]).join('') || "C"}
+                      {job.client?.username?.substring(0, 2).toUpperCase() || "C"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold">{job.client?.name || "Unknown Client"}</h4>
+                    <h4 className="font-semibold">{job.client?.username || job.client?.fullname || "Unknown Client"}</h4>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>⭐ {job.client?.rating || "N/A"}</span>
-                      <span>•</span>
-                      <span>{job.client?.completedProjects || 0} projects</span>
+                      <span>{job.client?.email || ""}</span>
                     </div>
                   </div>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Verified client with a history of successful projects.
+                  Verified client on SkillLink platform.
                 </p>
               </CardContent>
             </Card>
@@ -253,15 +230,17 @@ const JobDetails = () => {
               <CardContent className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Proposals</span>
-                  <span className="font-semibold">12</span>
+                  <span className="font-semibold">{bids.length}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Average Bid</span>
-                  <span className="font-semibold">$4,850</span>
+                  <span className="font-semibold">
+                    ${bids.length > 0 ? Math.round(bids.reduce((acc, bid) => acc + bid.amount, 0) / bids.length) : 0}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Posted</span>
-                  <span className="font-semibold">{job.postedDate}</span>
+                  <span className="font-semibold">{new Date(job.createdAt).toLocaleDateString()}</span>
                 </div>
               </CardContent>
             </Card>

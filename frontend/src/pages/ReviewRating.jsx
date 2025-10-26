@@ -1,24 +1,78 @@
 // pages/ReviewRating.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Star, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
+import reviewService from "@/services/review.service";
+import contractService from "@/services/contract.service";
 
 const ReviewRating = () => {
-  const { id } = useParams();
+  const { id: contractId } = useParams();
   const navigate = useNavigate();
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState("");
+  const [contract, setContract] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Simulate review submission
-    console.log("Review submitted:", { rating, review });
-    navigate("/client-dashboard");
+  useEffect(() => {
+    fetchContract();
+  }, [contractId]);
+
+  const fetchContract = async () => {
+    try {
+      setLoading(true);
+      const response = await contractService.getContractById(contractId);
+      const data = response.data || response;
+      setContract(data);
+      
+      if (data.status !== 'completed') {
+        toast.error("Can only review completed contracts");
+        navigate('/');
+      }
+    } catch (error) {
+      toast.error("Failed to load contract");
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (rating === 0) {
+      toast.error("Please select a rating");
+      return;
+    }
+    
+    if (!review.trim() || review.trim().length < 10) {
+      toast.error("Please write at least 10 characters in your review");
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      await reviewService.createReview({
+        contractId,
+        rating,
+        comment: review
+      });
+      toast.success("Review submitted successfully!");
+      navigate("/");
+    } catch (error) {
+      toast.error(error.message || "Failed to submit review");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (!contract) return <div className="min-h-screen bg-background flex items-center justify-center">Contract not found</div>;
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -27,7 +81,7 @@ const ReviewRating = () => {
           <CardHeader className="text-center">
             <CardTitle className="text-2xl">Leave a Review</CardTitle>
             <p className="text-muted-foreground">
-              Share your experience working with Sarah Chen
+              Share your experience working on this project
             </p>
           </CardHeader>
           <CardContent>
@@ -36,16 +90,12 @@ const ReviewRating = () => {
               <div className="flex items-center gap-4 p-4 border rounded-lg bg-muted/30">
                 <Avatar className="w-16 h-16">
                   <AvatarFallback className="bg-primary/20 text-primary text-lg">
-                    SC
+                    {contract.job?.title?.charAt(0) || 'J'}
                   </AvatarFallback>
                 </Avatar>
                 <div>
-                  <h3 className="font-semibold text-lg">Sarah Chen</h3>
-                  <p className="text-muted-foreground">UI/UX Designer</p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm">4.9 (47 reviews)</span>
-                  </div>
+                  <h3 className="font-semibold text-lg">{contract.job?.title || 'Contract'}</h3>
+                  <p className="text-muted-foreground">Contract #{contract._id.slice(-8)}</p>
                 </div>
               </div>
 
@@ -53,11 +103,11 @@ const ReviewRating = () => {
               <div className="p-4 border rounded-lg">
                 <h4 className="font-semibold mb-2">Project Completed</h4>
                 <p className="text-muted-foreground">
-                  Mobile App UI/UX Design - Contract #CTR-001
+                  {contract.job?.description || 'Contract completed successfully'}
                 </p>
                 <div className="flex items-center gap-2 mt-2 text-sm text-success">
                   <CheckCircle className="w-4 h-4" />
-                  <span>Successfully delivered on Feb 12, 2025</span>
+                  <span>Successfully delivered on {new Date(contract.updatedAt).toLocaleDateString()}</span>
                 </div>
               </div>
 
@@ -164,9 +214,9 @@ const ReviewRating = () => {
                   type="submit"
                   size="lg"
                   className="flex-1"
-                  disabled={rating === 0 || !review.trim()}
+                  disabled={rating === 0 || !review.trim() || submitting}
                 >
-                  Submit Review
+                  {submitting ? 'Submitting...' : 'Submit Review'}
                 </Button>
                 <Button
                   type="button"

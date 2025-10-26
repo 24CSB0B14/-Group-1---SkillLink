@@ -55,7 +55,6 @@ const WorkDelivery = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Simulate work submission
-    console.log("Work submitted:", formData);
     navigate("/contract/CTR-001");
   };
 

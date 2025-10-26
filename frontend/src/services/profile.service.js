@@ -22,6 +22,26 @@ const profileService = {
     }
   },
 
+  // Get all freelancers
+  getAllFreelancers: async (params) => {
+    try {
+      const response = await api.get('/profile/freelancers', { params });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Get public profile
+  getPublicProfile: async (userId) => {
+    try {
+      const response = await api.get(`/profile/public/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
   // Note: The following methods are not implemented in the backend
   // We'll comment them out for now until backend implementation is added
   

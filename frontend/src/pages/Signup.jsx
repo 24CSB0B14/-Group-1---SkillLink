@@ -23,11 +23,8 @@ const Signup = () => {
     e.preventDefault();
     setLoading(true);
     
-    console.log("Form data being submitted:", formData);
-    
     try {
       const response = await signup(formData);
-      console.log("Signup response:", response);
       
       if (response.success || response.statusCode === 200 || response.statusCode === 201) {
         toast.success("Account created successfully!");
@@ -36,7 +33,6 @@ const Signup = () => {
         toast.error(response.message || response.error || "Failed to create account");
       }
     } catch (error) {
-      console.error("Signup error:", error);
       toast.error(error.message || "Signup failed. Please try again.");
     } finally {
       setLoading(false);

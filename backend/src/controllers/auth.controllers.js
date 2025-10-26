@@ -9,16 +9,22 @@ import jwt from "jsonwebtoken";
 
 const registerUser = asyncHandler(async (req, res) => {
     //Extract fields from request body
-    const {fullname, email, username, password, role} = req.body
-    console.log("Request body:", req.body);
+    let {fullname, email, username, password, role, name} = req.body
 
-    //Check if any field is empty
+    // If username is not provided, use name or generate from email
+    if (!username && name) {
+        username = name;
+    } else if (!username) {
+        // Generate username from email if neither username nor name is provided
+        username = email.split('@')[0];
+    }
+
+    //Check if any required field is empty
     if (
         [fullname, email, username, password, role].some((field) => 
             field?.trim() === ""
         )
     ) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(400, "All fields are required")
     }
 
@@ -28,7 +34,6 @@ const registerUser = asyncHandler(async (req, res) => {
     })
 
     if (existedUser) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(409, "User with email or username already exists")
     }
 
@@ -44,7 +49,6 @@ const registerUser = asyncHandler(async (req, res) => {
     if (avatarLocalPath) {
         const avatarResponse = await uploadOnCloudinary(avatarLocalPath)
         if (!avatarResponse) {
-            console.log("../backend/src/controllers/auth.controllers.js")
             throw new ApiError(400, "Avatar file is required")
         }
         avatar = {
@@ -70,7 +74,6 @@ const registerUser = asyncHandler(async (req, res) => {
 
     //If user creation failed → throw error
     if (!createdUser) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(500, "Something went wrong while registering the user")
     }
 
@@ -86,7 +89,6 @@ const login = asyncHandler(async (req, res) => {
 
     //Either email or username must be provided
     if (!username && !email) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(400, "username or email is required")
     }
 
@@ -97,7 +99,6 @@ const login = asyncHandler(async (req, res) => {
 
     //If user not found → throw error
     if (!user) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(404, "User does not exist")
     }
 
@@ -106,8 +107,7 @@ const login = asyncHandler(async (req, res) => {
 
     //If password is incorrect → throw error
     if (!isPasswordValid) {
-        console.log("../backend/src/controllers/auth.controllers.js")
-        throw new ApiError(401, "Invalid user credentials")
+        throw new ApiError(401, "Wrong password")
     }
 
     //Generate access & refresh tokens for the user
@@ -119,7 +119,8 @@ const login = asyncHandler(async (req, res) => {
     //Cookie options → httpOnly (not accessible by JS), secure (HTTPS only)
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === 'production', // Only secure in production
+        sameSite: 'lax'
     }
 
     //Set tokens as cookies and return success response
@@ -157,7 +158,8 @@ const logoutUser = asyncHandler(async (req, res) => {
     //Cookie options → httpOnly (not accessible by JS), secure (HTTPS only)
     const options = {
         httpOnly: true,
-        secure: true //secure: ensures cookies are sent only over HTTPS
+        secure: process.env.NODE_ENV === 'production', // Only secure in production
+        sameSite: 'lax'
     }
     return res  
         .status(200)
@@ -201,7 +203,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
     const {verificationToken} = req.params
 
     if (!verificationToken) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(400, "Email verification token is missing")
     }
 
@@ -219,7 +220,6 @@ const verifyEmail = asyncHandler(async (req, res) => {
 
     //If user not found → invalid or expired token
     if (!user) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(400, "Invalid or expired verification token")
     }
 
@@ -250,12 +250,10 @@ const resendEmailVerification = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user?._id)
 
     if (!user) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(404, "User does not exist")
     }
 
     if (user.isEmailVerified) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(409, "Email is already Verified")
     }
 
@@ -286,7 +284,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const incomingRefreshToken = req.body.refreshToken || req.cookies.refreshToken
 
     if (!incomingRefreshToken) {
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(401, "Unauthorized access")
     }
 
@@ -338,7 +335,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     }
     catch (error) {
         //Any failure (invalid/expired token) → unauthorized
-        console.log("../backend/src/controllers/auth.controllers.js")
         throw new ApiError(401, "Invalid refresh token")
     }
 })

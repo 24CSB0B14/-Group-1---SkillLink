@@ -37,11 +37,6 @@ const Settings = () => {
 
   const handleSave = (section) => {
     // Simulate saving settings
-    console.log(`Saving ${section} settings:`, {
-      profile,
-      notifications,
-      security
-    }[section]);
   };
 
   return (

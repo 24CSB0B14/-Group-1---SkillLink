@@ -58,9 +58,7 @@ export const AuthProvider = ({ children }) => {
   // Login function
   const login = async (credentials) => {
     try {
-      console.log("Login function called with credentials:", credentials);
       const response = await authService.login(credentials);
-      console.log("Login response:", response);
       
       // Handle different response formats
       let userData = null;
@@ -79,16 +77,11 @@ export const AuthProvider = ({ children }) => {
       if (userData) {
         setUser(userData);
         setIsAuthenticated(true);
-        // Store token in localStorage
-        if (token) {
-          localStorage.setItem("token", token);
-        }
         return { success: true, data: userData };
       } else {
         return { success: false, error: "Invalid response from server" };
       }
     } catch (error) {
-      console.error("Login error in AuthContext:", error);
       // Ensure user is logged out on login failure
       setUser(null);
       setIsAuthenticated(false);
@@ -99,9 +92,7 @@ export const AuthProvider = ({ children }) => {
   // Signup function
   const signup = async (userData) => {
     try {
-      console.log("Signup function called with data:", userData);
       const response = await authService.signup(userData);
-      console.log("Signup response:", response);
       
       // Handle different response formats
       let userObject = null;
@@ -120,16 +111,11 @@ export const AuthProvider = ({ children }) => {
       if (userObject) {
         setUser(userObject);
         setIsAuthenticated(true);
-        // Store token in localStorage
-        if (token) {
-          localStorage.setItem("token", token);
-        }
         return { success: true, data: { ...response.data, user: userObject } };
       } else {
         return { success: false, error: "Invalid response from server" };
       }
     } catch (error) {
-      console.error("Signup error in AuthContext:", error);
       // Ensure user is logged out on signup failure
       setUser(null);
       setIsAuthenticated(false);
@@ -143,13 +129,11 @@ export const AuthProvider = ({ children }) => {
       await authService.logout();
       setUser(null);
       setIsAuthenticated(false);
-      localStorage.removeItem("token");
       return { success: true };
     } catch (error) {
       // Even if logout fails on the server, we still clear local state
       setUser(null);
       setIsAuthenticated(false);
-      localStorage.removeItem("token");
       return { success: true, error: error.message || "Logout completed locally" };
     }
   };

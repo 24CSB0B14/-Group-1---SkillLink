@@ -9,84 +9,39 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Star, MapPin, Briefcase, Calendar, DollarSign, Download, MessageCircle } from "lucide-react";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
+import profileService from "@/services/profile.service";
 
 const PublicProfile = () => {
   const { id } = useParams();
   const { isClient } = useRole();
   const { user } = useAuth();
   const [freelancer, setFreelancer] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    const mockFreelancer = {
-      id: 1,
-      name: "Sarah Chen",
-      title: "Senior UI/UX Designer",
-      avatar: "",
-      rating: 4.9,
-      totalReviews: 47,
-      completedProjects: 52,
-      location: "San Francisco, CA",
-      hourlyRate: 85,
-      memberSince: "2023",
-      skills: ["Figma", "UI/UX Design", "Prototyping", "User Research", "Mobile Design", "Web Design"],
-      bio: "Senior UI/UX designer with 8+ years of experience specializing in mobile and web applications. Passionate about creating intuitive, user-centered designs that drive business results. I've worked with startups and Fortune 500 companies across fintech, e-commerce, and healthcare industries.",
-      portfolio: [
-        {
-          id: 1,
-          title: "Banking Mobile App Redesign",
-          description: "Complete redesign of a banking mobile application focusing on user experience and accessibility.",
-          image: "",
-          tags: ["Mobile", "Fintech", "UI/UX"]
-        },
-        {
-          id: 2,
-          title: "E-commerce Dashboard",
-          description: "Analytics dashboard for e-commerce merchants with real-time data visualization.",
-          image: "",
-          tags: ["Web", "Dashboard", "Data Visualization"]
-        }
-      ],
-      workHistory: [
-        {
-          company: "Design Studio Inc.",
-          position: "Lead UI/UX Designer",
-          period: "2022 - Present",
-          description: "Leading design team for client projects across various industries."
-        },
-        {
-          company: "Tech Solutions LLC",
-          position: "Senior Designer",
-          period: "2020 - 2022",
-          description: "Designed user interfaces for web and mobile applications."
-        }
-      ],
-      reviews: [
-        {
-          id: 1,
-          client: "John Smith",
-          rating: 5,
-          comment: "Sarah delivered exceptional work on our mobile app redesign. Her attention to detail and user experience focus was outstanding.",
-          date: "2025-01-10",
-          project: "Mobile App UI/UX"
-        },
-        {
-          id: 2,
-          client: "Emma Wilson",
-          rating: 5,
-          comment: "Professional, creative, and great communicator. Would definitely work with Sarah again!",
-          date: "2024-12-15",
-          project: "Website Redesign"
-        }
-      ]
-    };
-
-    setFreelancer(mockFreelancer);
+    fetchProfile();
   }, [id]);
 
-  if (!freelancer) return <div>Loading...</div>;
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await profileService.getPublicProfile(id);
+      const data = response.data || response;
+      setFreelancer(data);
+    } catch (error) {
+      toast.error("Failed to load profile");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Additional check to ensure we have user data
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (!freelancer) return <div className="min-h-screen bg-background flex items-center justify-center">Profile not found</div>;
+
+  const profile = freelancer.freelancerProfile || {};
   const canContact = isClient() && user;
 
   return (
@@ -99,15 +54,15 @@ const PublicProfile = () => {
               <Avatar className="w-24 h-24">
                 <AvatarImage src={freelancer.avatar} />
                 <AvatarFallback className="text-2xl bg-primary/20 text-primary">
-                  {freelancer.name.split(' ').map(n => n[0]).join('')}
+                  {freelancer.username?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
               
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
                   <div>
-                    <h1 className="text-3xl font-bold">{freelancer.name}</h1>
-                    <p className="text-xl text-muted-foreground mt-1">{freelancer.title}</p>
+                    <h1 className="text-3xl font-bold">{freelancer.username}</h1>
+                    <p className="text-xl text-muted-foreground mt-1">{profile.title || 'Freelancer'}</p>
                   </div>
                   {canContact && (
                     <div className="flex gap-2 mt-4 md:mt-0">
@@ -126,28 +81,28 @@ const PublicProfile = () => {
                   <div className="flex items-center gap-2">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                     <div>
-                      <div className="font-semibold">{freelancer.rating}</div>
-                      <div className="text-sm text-muted-foreground">{freelancer.totalReviews} reviews</div>
+                      <div className="font-semibold">{profile.rating || 'New'}</div>
+                      <div className="text-sm text-muted-foreground">{profile.totalReviews || 0} reviews</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Briefcase className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <div className="font-semibold">{freelancer.completedProjects}</div>
+                      <div className="font-semibold">{profile.completedProjects || 0}</div>
                       <div className="text-sm text-muted-foreground">Projects</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <div className="font-semibold">${freelancer.hourlyRate}/hr</div>
+                      <div className="font-semibold">${profile.hourlyRate || 0}/hr</div>
                       <div className="text-sm text-muted-foreground">Rate</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <div className="font-semibold">{freelancer.memberSince}</div>
+                      <div className="font-semibold">{new Date(freelancer.createdAt).getFullYear()}</div>
                       <div className="text-sm text-muted-foreground">Member since</div>
                     </div>
                   </div>
@@ -156,7 +111,7 @@ const PublicProfile = () => {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {freelancer.location}
+                    {profile.location || 'Remote'}
                   </div>
                 </div>
               </div>
@@ -181,7 +136,7 @@ const PublicProfile = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground leading-relaxed">
-                  {freelancer.bio}
+                  {profile.bio || 'Professional freelancer ready to work on your next project.'}
                 </p>
               </CardContent>
             </Card>
@@ -192,11 +147,14 @@ const PublicProfile = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {freelancer.skills.map((skill, index) => (
+                  {(profile.skills || []).map((skill, index) => (
                     <Badge key={index} variant="secondary" className="text-sm py-1 px-3">
                       {skill}
                     </Badge>
                   ))}
+                  {(!profile.skills || profile.skills.length === 0) && (
+                    <p className="text-muted-foreground">No skills listed</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

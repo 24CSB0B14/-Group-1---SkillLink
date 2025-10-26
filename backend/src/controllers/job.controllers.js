@@ -238,8 +238,13 @@ const searchJobs = asyncHandler(async (req, res) => {
 });
 
 const getJobsByClient = asyncHandler(async (req, res) => {
+    // Check if user is authenticated
+    if (!req.user) {
+        throw new ApiError(401, "User not authenticated");
+    }
+
     // Check if user role is properly set
-    if (!req.user || !req.user.role) {
+    if (!req.user.role) {
         throw new ApiError(403, "User role not found");
     }
 
@@ -248,13 +253,9 @@ const getJobsByClient = asyncHandler(async (req, res) => {
         throw new ApiError(403, "Only clients can view their own jobs");
     }
 
-    console.log("Fetching jobs for client:", req.user._id);
-    
     const jobs = await Job.find({ client: req.user._id })
         .populate("client", "username email")
         .sort({ createdAt: -1 });
-    
-    console.log("Found jobs:", jobs.length);
 
     return res
         .status(200)

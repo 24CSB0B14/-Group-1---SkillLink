@@ -23,7 +23,6 @@ const Login = () => {
     if (isAuthenticated) {
       // We don't know the user's role yet, so we'll let them stay on the login page
       // The ProtectedRoute will handle redirecting them to the correct dashboard
-      console.log("User is already authenticated");
     }
   }, [isAuthenticated, navigate]);
 
@@ -50,7 +49,13 @@ const Login = () => {
         toast.error(response.error || "Invalid email or password");
       }
     } catch (error) {
-      toast.error("Login failed. Please try again.");
+      if (error.message && error.message.toLowerCase().includes('wrong password')) {
+        toast.error("Wrong password. Please try again.");
+      } else if (error.message && error.message.toLowerCase().includes('user does not exist')) {
+        toast.error("User does not exist. Please check your email.");
+      } else {
+        toast.error("Login failed. Please try again.");
+      }
     } finally {
       setLoading(false);
     }

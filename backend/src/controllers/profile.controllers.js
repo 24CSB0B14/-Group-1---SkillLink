@@ -82,4 +82,48 @@ const updateProfile = asyncHandler(async (req, res) => {
     );
 })
 
-export { getProfile, updateProfile }
+// Get all freelancers for directory
+const getAllFreelancers = asyncHandler(async (req, res) => {
+    const { skills, search, limit = 50 } = req.query;
+    
+    const filter = { role: UserRolesEnum.FREELANCER };
+    
+    if (search) {
+        filter.$or = [
+            { username: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } }
+        ];
+    }
+    
+    const freelancers = await User.find(filter)
+        .select('username email role freelancerProfile')
+        .populate({
+            path: 'freelancerProfile',
+            select: 'skills hourlyRate experience portfolio'
+        })
+        .limit(parseInt(limit));
+    
+    return res.status(200).json(
+        new ApiResponse(200, freelancers, "Freelancers fetched successfully")
+    );
+});
+
+// Get public profile by user ID
+const getPublicProfile = asyncHandler(async (req, res) => {
+    const { userId } = req.params;
+    
+    const user = await User.findById(userId)
+        .select('username email role clientProfile freelancerProfile')
+        .populate('clientProfile')
+        .populate('freelancerProfile');
+    
+    if (!user) {
+        throw new ApiError(404, "User not found");
+    }
+    
+    return res.status(200).json(
+        new ApiResponse(200, user, "Public profile fetched successfully")
+    );
+});
+
+export { getProfile, updateProfile, getAllFreelancers, getPublicProfile }

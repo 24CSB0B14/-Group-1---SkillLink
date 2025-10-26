@@ -48,7 +48,6 @@ const DisputeResolution = () => {
   const handleSubmitResolution = (e) => {
     e.preventDefault();
     // Simulate dispute resolution
-    console.log("Dispute resolved:", { decision, resolution });
   };
 
   if (!dispute) return <div>Loading...</div>;

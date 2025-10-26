@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Briefcase, Search, Rocket } from "lucide-react";
 import { useEffect, useState } from "react";
 import api from "@/services/api";
-import ConnectionTest from "@/components/ConnectionTest";
-import TestAPIConnection from "@/components/TestAPIConnection";
 
 const Landing = () => {
   const [healthStatus, setHealthStatus] = useState(null);
@@ -68,9 +66,6 @@ const Landing = () => {
               <a href="#how-it-works" className="text-header-foreground/80 hover:text-header-foreground transition">
                 How It Works
               </a>
-              <Link to="/api-test" className="text-header-foreground/80 hover:text-header-foreground transition">
-                API Test
-              </Link>
             </nav>
           </div>
         </div>
@@ -105,19 +100,7 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Connection Test Section */}
-      <section className="py-8 bg-card">
-        <div className="container mx-auto px-4">
-          <ConnectionTest />
-        </div>
-      </section>
 
-      {/* API Connection Test Section */}
-      <section className="py-8 bg-card">
-        <div className="container mx-auto px-4">
-          <TestAPIConnection />
-        </div>
-      </section>
 
       {/* How It Works */}
       <section id="how-it-works" className="py-16 bg-card">

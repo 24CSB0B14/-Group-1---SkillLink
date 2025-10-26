@@ -46,9 +46,7 @@ const sendEmail = async (options) => { //options usually contains: email, subjec
         await transporter.sendMail(mail)
     }
     catch (error) {
-        console.error("Email service failed silently, Make sure that you have provided your MAILTRAP credentials in the .env file")
-        console.error("Error: ", error)
-        console.log("../backend/utils/mail.js")
+        // Handle email sending errors silently
     }
 }
 

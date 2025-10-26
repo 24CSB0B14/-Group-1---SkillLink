@@ -24,7 +24,6 @@ const uploadOnCloudinary = async(localFilePath) => { //Defines an async function
                 resource_type: "auto"
             }
         )
-        console.log("File upload on cloudinary. File src: " + response.url);
         //Deletes the local temporary file after successful upload to save disk space.
         //Checks if file exists to avoid errors.
         if (fs.existsSync(localFilePath)) {
@@ -43,9 +42,9 @@ const uploadOnCloudinary = async(localFilePath) => { //Defines an async function
 const deleteFromCloudinary = async (publicId) => {
     try {
         const result = await cloudinary.uploader.destroy(publicId);
-        console.log("Deleted from cloudinary", publicId);
+
     } catch (error) {
-        console.log("Error deleting from cloudinary", error);
+
         return null;
     }
 }

@@ -26,7 +26,6 @@ const EscrowFunding = () => {
 
   const handleFundEscrow = () => {
     // Simulate funding process
-    console.log("Funding escrow for contract:", contract.id);
     setTimeout(() => {
       navigate("/contract/" + contract.id);
     }, 2000);

@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/api-response.js";
 import { UserRolesEnum } from "../utils/constants.js";
 import { Job } from "../models/job.models.js";
 import { Contract } from "../models/contract.models.js";
+import { createNotification } from "./notification.controllers.js";
 
 const postBid = asyncHandler(async (req, res) => {
     const { jobId, amount, coverLetter } = req.body
@@ -30,6 +31,18 @@ const postBid = asyncHandler(async (req, res) => {
         coverLetter,
     });
 
+    // Create notification for client
+    await createNotification({
+        recipient: job.client,
+        sender: req.user._id,
+        type: "bid",
+        title: "New Bid Received",
+        message: `${req.user.username} submitted a bid of $${amount} for your job`,
+        relatedId: bid._id,
+        relatedModel: "Bid",
+        actionUrl: `/job-details/${jobId}`
+    });
+
     res
     .status(201)
     .json(
@@ -49,7 +62,7 @@ const acceptBid = asyncHandler(async (req, res) => {
         .populate("job")
         .populate({
             path: "freelancer",
-            select: "id, username fullname skills portfolio experience" 
+            select: "username fullname email" 
         });
 
     if (!bid) {
@@ -78,11 +91,12 @@ const acceptBid = asyncHandler(async (req, res) => {
         agreedRate: bid.amount,
         paymentType: "milestone",
         paymentRules: [
-            { milestoneName: "Initial Phase", amount: bid.amount / 2 },
-            { milestoneName: "Final Delivery", amount: bid.amount / 2 }
+            { milestoneName: "Initial Phase", amount: bid.amount / 2, status: "pending" },
+            { milestoneName: "Final Delivery", amount: bid.amount / 2, status: "pending" }
         ],
-        deliverables: job.description || [],
-        terms: "Freelancer agrees to deliver within 2 weeks.",
+        deliverables: [job.description] || [],
+        terms: "Freelancer agrees to deliver as per job requirements.",
+        status: "active"
     });
 
     bid.status = "accepted";
@@ -93,12 +107,34 @@ const acceptBid = asyncHandler(async (req, res) => {
         { $set: { status: "rejected" } }
     );
 
+    // Update job status and assign freelancer
+    job.status = "IN_PROGRESS";
+    job.assignedFreelancer = bid.freelancer._id;
+    await job.save();
+
+    // Create notification for freelancer
+    await createNotification({
+        recipient: bid.freelancer._id,
+        sender: clientId,
+        type: "contract",
+        title: "Bid Accepted! Contract Created",
+        message: "Your bid has been accepted! A contract has been created for the job.",
+        relatedId: contract._id,
+        relatedModel: "Contract",
+        actionUrl: `/contract/${contract._id}`
+    });
+
+    const populatedContract = await Contract.findById(contract._id)
+        .populate("client", "username email")
+        .populate("freelancer", "username email")
+        .populate("job", "title description budget");
+
     return res
         .status(200)
         .json(
         new ApiResponse(
             200,
-            { contract, acceptedBid: bid },
+            { contract: populatedContract, acceptedBid: bid },
             "Bid accepted and contract created successfully"
         )
     );

@@ -5,12 +5,9 @@ const authService = {
   // User signup
   signup: async (userData) => {
     try {
-      console.log('Sending signup data:', userData);
       const response = await api.post('/auth/register', userData);
-      console.log('Signup response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Signup error:', error);
       // Return a more detailed error message
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
@@ -29,12 +26,9 @@ const authService = {
   // User login
   login: async (credentials) => {
     try {
-      console.log('Sending login data:', credentials);
       const response = await api.post('/auth/login', credentials);
-      console.log('Login response:', response.data);
       return response.data;
     } catch (error) {
-      console.error('Login error:', error);
       // Return a more detailed error message
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
@@ -76,7 +70,6 @@ const authService = {
       const response = await api.post('/auth/forget-password', { email });
       return response;
     } catch (error) {
-      console.error('Forgot password error:', error);
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       } else if (error.response?.data?.errors) {
@@ -96,7 +89,6 @@ const authService = {
       const response = await api.post(`/auth/reset-password/${resetToken}`, { newPassword });
       return response.data;
     } catch (error) {
-      console.error('Reset password error:', error);
       if (error.response?.data?.message) {
         throw new Error(error.response.data.message);
       } else if (error.response?.data?.errors) {

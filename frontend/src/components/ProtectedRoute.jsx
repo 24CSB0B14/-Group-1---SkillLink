@@ -1,6 +1,7 @@
 import { useAuth } from "@/context/AuthContext";
 import { useRole } from "@/hooks/useRole";
 import { Navigate, useLocation } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * ProtectedRoute component to protect routes based on authentication and roles
@@ -18,8 +19,16 @@ const ProtectedRoute = ({ children, allowedRoles = null, requireAuth = true }) =
   // Show loading state while checking auth status
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p>Loading...</p>
+      <div className="min-h-screen bg-background p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <Skeleton className="h-16 w-full" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <Skeleton className="h-96 w-full" />
+        </div>
       </div>
     );
   }
