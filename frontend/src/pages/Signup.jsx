@@ -6,24 +6,41 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Briefcase, Wrench } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const Signup = () => {
   const navigate = useNavigate();
+  const { signup } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     role: "client",
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     
-    // Store user data in localStorage for demo purposes
-    localStorage.setItem("skilllink_user", JSON.stringify(formData));
+    console.log("Form data being submitted:", formData);
     
-    toast.success("Account created successfully!");
-    navigate("/onboarding");
+    try {
+      const response = await signup(formData);
+      console.log("Signup response:", response);
+      
+      if (response.success || response.statusCode === 200 || response.statusCode === 201) {
+        toast.success("Account created successfully!");
+        navigate("/onboarding");
+      } else {
+        toast.error(response.message || response.error || "Failed to create account");
+      }
+    } catch (error) {
+      console.error("Signup error:", error);
+      toast.error(error.message || "Signup failed. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -127,8 +144,8 @@ const Signup = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Create My SkillLink Account
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? "Creating Account..." : "Create My SkillLink Account"}
             </Button>
 
             <p className="text-center text-sm text-muted-foreground">

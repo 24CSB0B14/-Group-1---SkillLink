@@ -6,8 +6,13 @@ export const validate = (req, res, next) => {
     //Collect validation errors from the request
     const errors = validationResult(req)
 
+    console.log("Validation middleware called");
+    console.log("Request body:", req.body);
+    console.log("Validation result:", errors);
+
     //If there are no validation errors, continue to next middleware/controller
     if (errors.isEmpty()) {
+        console.log("No validation errors, proceeding to next middleware");
         return next()
     }
 
@@ -16,7 +21,10 @@ export const validate = (req, res, next) => {
     const extractedErrors = []
     errors.array().map((err) => extractedErrors.push({[err.path]: err.msg}))
 
-    //The controller calling this middleware can catch this and return a proper response
+    // Log validation errors for debugging
+    console.log("Validation errors found:", errors.array());
     console.log("../backend/src/middlewares/validator.middleware.js")
+    
+    //The controller calling this middleware can catch this and return a proper response
     throw new ApiError(422, "Received data is not valid", extractedErrors)
 }

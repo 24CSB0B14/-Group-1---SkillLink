@@ -9,11 +9,19 @@ import {
     refreshAccessToken,
     forgotPasswordRequest,
     resetForgotPassword,
-    changeCurrentPassword 
+    changeCurrentPassword,
+    updateUserAvatar
 } from "../controllers/auth.controllers.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { userRegisterValidator, userLoginValidator, userChangeCurrentPasswordValidator, userForgotPasswordValidator, userResetForgotPasswordValidator } from "../validators/index.js";
+import { 
+        userRegisterValidator, 
+        userLoginValidator, 
+        userChangeCurrentPasswordValidator, 
+        userForgotPasswordValidator, 
+        userResetForgotPasswordValidator
+    } from "../validators/index.js";
+import { upload } from "../middlewares/multer.middleware.js";
 
 const router = Router()
 
@@ -21,11 +29,35 @@ const router = Router()
 
 //User registration route
 //Validates request body first, then registers the user
-router.route("/register").post(userRegisterValidator(), validate, registerUser)
+router.route("/register").post(
+    upload.fields([
+        {
+            name: "avatar",
+            maxCount: 1
+        }
+    ]), 
+    (req, res, next) => {
+        console.log("Register route hit");
+        console.log("Request body:", req.body);
+        next();
+    },
+    userRegisterValidator(),
+    validate, 
+    registerUser
+)
 
 //User login route
 //Validates request body first, then logs in the user
-router.route("/login").post(userLoginValidator(), validate, login)
+router.route("/login").post(
+    (req, res, next) => {
+        console.log("Login route hit");
+        console.log("Request body:", req.body);
+        next();
+    },
+    userLoginValidator(), 
+    validate, 
+    login
+)
 
 //Email verification route
 //User clicks the link sent to their email
@@ -50,7 +82,7 @@ router.route("/reset-password/:resetToken").post(userResetForgotPasswordValidato
 router.route("/logout").post(verifyJWT, logoutUser)
 
 //Get current logged-in user details
-router.route("/current-user").post(verifyJWT, getCurrentUser)
+router.route("/current-user").get(verifyJWT, getCurrentUser)
 
 //Change current password route
 //Validates request body and changes password
@@ -60,7 +92,6 @@ router.route("/change-password").post(verifyJWT, userChangeCurrentPasswordValida
 //Sends verification email again
 router.route("/resend-email-verification").post(verifyJWT, resendEmailVerification)
 
+router.route("/update-avatar").post(verifyJWT, upload.single("avatar"), updateUserAvatar);
+
 export default router
-
-
-

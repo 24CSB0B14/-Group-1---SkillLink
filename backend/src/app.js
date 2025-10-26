@@ -16,9 +16,9 @@ app.use(cookieParser());
 
 //basic setup of cors
 app.use(cors({
-    origin : process.env.CORS_ORIGIN?.split(",") || "http://localhost:8080", //allows requests from specified urls
+    origin : true, //allows requests from any origin
     credentials : true, //allows cookies, authorization headers etc
-    methods : ["GET", "POST", "PUT", "PATCH", "DELETE", "DELETE", "OPTIONS"], //allows these req from frontend
+    methods : ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], //allows these req from frontend
     allowedHeaders: ["Content-Type", "Authorization"] //List of headers allowed in cross origin requests
 }));
 
@@ -54,4 +54,3 @@ app.use("/api/v1/bids", bidRoutes)
 app.use("/api/v1/invitations", invitationRoutes)
 
 export default app
-

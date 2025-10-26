@@ -8,8 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Star, MapPin, Briefcase, DollarSign } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/context/AuthContext";
 
 const FreelancerDirectory = () => {
+  const { isClient } = useRole();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSkills, setSelectedSkills] = useState([]);
   const [experienceFilter, setExperienceFilter] = useState("all");
@@ -73,6 +77,9 @@ const FreelancerDirectory = () => {
     return matchesSearch && matchesExperience && matchesRate;
   });
 
+  // Additional check to ensure we have user data
+  const canInvite = isClient() && user;
+
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4 max-w-7xl">
@@ -83,9 +90,11 @@ const FreelancerDirectory = () => {
               Browse skilled professionals for your projects
             </p>
           </div>
-          <Button asChild>
-            <Link to="/post-job">Post a Job</Link>
-          </Button>
+          {canInvite && (
+            <Button asChild>
+              <Link to="/post-job">Post a Job</Link>
+            </Button>
+          )}
         </div>
 
         {/* Filters */}
@@ -200,11 +209,13 @@ const FreelancerDirectory = () => {
                       View Profile
                     </Link>
                   </Button>
-                  <Button variant="outline" asChild>
-                    <Link to={`/invite-freelancer/${freelancer.id}`}>
-                      Invite
-                    </Link>
-                  </Button>
+                  {canInvite && (
+                    <Button variant="outline" asChild>
+                      <Link to={`/invite-freelancer/${freelancer.id}`}>
+                        Invite
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>

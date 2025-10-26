@@ -7,68 +7,99 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Calendar, DollarSign, Clock, MapPin, User, Briefcase } from "lucide-react";
+import { toast } from "sonner";
+import jobService from "@/services/job.service";
+import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/context/AuthContext";
 
 const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isFreelancer } = useRole();
+  const { user } = useAuth();
   const [job, setJob] = useState(null);
   const [bids, setBids] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    const mockJob = {
-      id: "SKL-001",
-      title: "Senior UI/UX Designer for Mobile App",
-      description: "We're looking for an experienced UI/UX designer to redesign our mobile banking application. The ideal candidate should have experience in financial apps and a strong portfolio of mobile design work.",
-      budget: 5000,
-      budgetType: "fixed",
-      deadline: "2025-02-15",
-      skills: ["Figma", "UI/UX Design", "Mobile Design", "Prototyping", "User Research"],
-      category: "UI/UX Design",
-      experienceLevel: "expert",
-      client: {
-        name: "Tech Innovations Inc.",
-        rating: 4.8,
-        completedProjects: 24
-      },
-      status: "open",
-      postedDate: "2025-01-10"
-    };
-
-    const mockBids = [
-      {
-        id: 1,
-        freelancer: {
-          name: "Sarah Chen",
-          avatar: "",
-          rating: 4.9,
-          skills: ["UI/UX Design", "Figma", "Prototyping"]
-        },
-        amount: 4500,
-        timeline: "3 weeks",
-        proposal: "I have extensive experience in financial app design and can deliver a modern, user-friendly interface.",
-        submittedDate: "2025-01-11"
-      },
-      {
-        id: 2,
-        freelancer: {
-          name: "Mike Rodriguez",
-          avatar: "",
-          rating: 4.7,
-          skills: ["Mobile Design", "UI/UX", "Adobe XD"]
-        },
-        amount: 5200,
-        timeline: "4 weeks",
-        proposal: "I specialize in mobile banking apps and can provide research-backed design solutions.",
-        submittedDate: "2025-01-12"
-      }
-    ];
-
-    setJob(mockJob);
-    setBids(mockBids);
+    fetchJobDetails();
   }, [id]);
 
-  if (!job) return <div>Loading...</div>;
+  const fetchJobDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await jobService.getJobById(id);
+      // Use actual API response data
+      const jobData = response.data || response;
+      setJob(jobData);
+      
+      // For now, we'll use mock bids since there's no bids API yet
+      // In a real implementation, this would come from the API
+      setBids(mockBids);
+    } catch (error) {
+      console.error("Failed to fetch job details:", error);
+      toast.error("Failed to load job details");
+      // Fallback to mock data if API fails
+      setJob(mockJob);
+      setBids(mockBids);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mockJob = {
+    _id: "SKL-001",
+    title: "Senior UI/UX Designer for Mobile App",
+    description: "We're looking for an experienced UI/UX designer to redesign our mobile banking application. The ideal candidate should have experience in financial apps and a strong portfolio of mobile design work.",
+    budget: 5000,
+    budgetType: "fixed",
+    deadline: "2025-02-15",
+    skills: ["Figma", "UI/UX Design", "Mobile Design", "Prototyping", "User Research"],
+    category: "UI/UX Design",
+    experienceLevel: "expert",
+    client: {
+      name: "Tech Innovations Inc.",
+      rating: 4.8,
+      completedProjects: 24
+    },
+    status: "open",
+    postedDate: "2025-01-10"
+  };
+
+  const mockBids = [
+    {
+      id: 1,
+      freelancer: {
+        name: "Sarah Chen",
+        avatar: "",
+        rating: 4.9,
+        skills: ["UI/UX Design", "Figma", "Prototyping"]
+      },
+      amount: 4500,
+      timeline: "3 weeks",
+      proposal: "I have extensive experience in financial app design and can deliver a modern, user-friendly interface.",
+      submittedDate: "2025-01-11"
+    },
+    {
+      id: 2,
+      freelancer: {
+        name: "Mike Rodriguez",
+        avatar: "",
+        rating: 4.7,
+        skills: ["Mobile Design", "UI/UX", "Adobe XD"]
+      },
+      amount: 5200,
+      timeline: "4 weeks",
+      proposal: "I specialize in mobile banking apps and can provide research-backed design solutions.",
+      submittedDate: "2025-01-12"
+    }
+  ];
+
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (!job) return <div className="min-h-screen bg-background flex items-center justify-center">Job not found</div>;
+
+  // Additional check to ensure we have user data
+  const canPlaceBid = isFreelancer() && user;
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -91,13 +122,15 @@ const JobDetails = () => {
                         Posted {job.postedDate}
                       </div>
                       <Badge variant={job.status === "open" ? "success" : "secondary"}>
-                        {job.status.toUpperCase()}
+                        {job.status?.toUpperCase() || "OPEN"}
                       </Badge>
                     </div>
                   </div>
-                  <Button onClick={() => navigate("/place-bid/" + job.id)}>
-                    Place Bid
-                  </Button>
+                  {canPlaceBid && (
+                    <Button onClick={() => navigate("/place-bid/" + job._id)}>
+                      Place Bid
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -111,7 +144,7 @@ const JobDetails = () => {
                 <div>
                   <h3 className="font-semibold mb-2">Skills Required</h3>
                   <div className="flex flex-wrap gap-2">
-                    {job.skills.map((skill, index) => (
+                    {job.skills?.map((skill, index) => (
                       <Badge key={index} variant="outline">
                         {skill}
                       </Badge>
@@ -127,11 +160,11 @@ const JobDetails = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
-                    <span>Deadline: {job.deadline}</span>
+                    <span>Deadline: {job.deadline || "Not specified"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <User className="w-4 h-4 text-muted-foreground" />
-                    <span>Experience: {job.experienceLevel}</span>
+                    <span>Experience: {job.experienceLevel || "Not specified"}</span>
                   </div>
                 </div>
               </CardContent>
@@ -194,39 +227,42 @@ const JobDetails = () => {
                 <div className="flex items-center gap-3">
                   <Avatar>
                     <AvatarFallback className="bg-primary/20 text-primary">
-                      {job.client.name.split(' ').map(n => n[0]).join('')}
+                      {job.client?.name?.split(' ').map(n => n[0]).join('') || "C"}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold">{job.client.name}</h4>
+                    <h4 className="font-semibold">{job.client?.name || "Unknown Client"}</h4>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>⭐ {job.client.rating}</span>
+                      <span>⭐ {job.client?.rating || "N/A"}</span>
                       <span>•</span>
-                      <span>{job.client.completedProjects} projects</span>
+                      <span>{job.client?.completedProjects || 0} projects</span>
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" className="w-full">
-                  View Client Profile
-                </Button>
+                <p className="text-sm text-muted-foreground">
+                  Verified client with a history of successful projects.
+                </p>
               </CardContent>
             </Card>
 
-            {/* Job Actions */}
+            {/* Job Stats */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Job Actions</CardTitle>
+                <CardTitle className="text-lg">Job Stats</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button className="w-full">
-                  Place Bid
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Save Job
-                </Button>
-                <Button variant="outline" className="w-full">
-                  Share Job
-                </Button>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Proposals</span>
+                  <span className="font-semibold">12</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Average Bid</span>
+                  <span className="font-semibold">$4,850</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Posted</span>
+                  <span className="font-semibold">{job.postedDate}</span>
+                </div>
               </CardContent>
             </Card>
           </div>

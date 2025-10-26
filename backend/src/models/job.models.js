@@ -50,9 +50,43 @@ const jobSchema = new Schema({
         enum: [CONTRACT_STATUS.ACTIVE, CONTRACT_STATUS.IN_PROGRESS, CONTRACT_STATUS.CANCELLED, CONTRACT_STATUS.COMPLETED, CONTRACT_STATUS.DISPUTED],
         default: CONTRACT_STATUS.ACTIVE,
     },
+    // Additional fields
+    skills: [{
+        type: String,
+        trim: true
+    }],
+    experienceLevel: {
+        type: String,
+        enum: ["entry", "intermediate", "expert"],
+        default: "intermediate"
+    },
+    deadline: {
+        type: Date
+    }
 },
 {
     timestamps: true,
+});
+
+// Add pre-validation hook to log validation errors
+jobSchema.pre('validate', function(next) {
+    console.log('Validating job document:', this.toObject());
+    next();
+});
+
+// Add post-validation hook to log validation results
+jobSchema.post('validate', function(doc, next) {
+    console.log('Job document validated successfully:', doc.toObject());
+    next();
+});
+
+// Add error handling for validation
+jobSchema.post('save', function(error, doc, next) {
+    if (error.name === 'ValidationError') {
+        console.error('Job validation error:', error.message);
+        console.error('Job validation error details:', error.errors);
+    }
+    next(error);
 });
 
 export const Job = mongoose.model("Job", jobSchema)

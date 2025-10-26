@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,38 +6,53 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      // We don't know the user's role yet, so we'll let them stay on the login page
+      // The ProtectedRoute will handle redirecting them to the correct dashboard
+      console.log("User is already authenticated");
+    }
+  }, [isAuthenticated, navigate]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
     
-    // Get stored user data
-    const storedUser = localStorage.getItem("skilllink_user");
-    
-    if (storedUser) {
-      const user = JSON.parse(storedUser);
+    try {
+      const response = await login(formData);
       
-      if (user.email === formData.email && user.password === formData.password) {
+      if (response.success) {
         toast.success("Login successful!");
         
         // Redirect based on role
-        if (user.role === "client") {
+        if (response.data.role === "client") {
           navigate("/client-dashboard");
-        } else {
+        } else if (response.data.role === "freelancer") {
           navigate("/freelancer-dashboard");
+        } else {
+          // Default redirect if role is not recognized
+          navigate("/");
         }
       } else {
-        toast.error("Invalid email or password");
+        toast.error(response.error || "Invalid email or password");
       }
-    } else {
-      toast.error("Account not found. Please sign up first.");
+    } catch (error) {
+      toast.error("Login failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -89,9 +104,9 @@ const Login = () => {
             </div>
 
             <div className="space-y-2 text-sm">
-              <a href="#" className="text-primary hover:underline block">
+              <Link to="/forgot-password" className="text-primary hover:underline block">
                 Forgot Password?
-              </a>
+              </Link>
               <div>
                 <span className="text-muted-foreground">Don't have an account? </span>
                 <Link to="/signup" className="text-primary hover:underline">
@@ -100,8 +115,8 @@ const Login = () => {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Login to SkillLink Account
+            <Button type="submit" className="w-full" size="lg" disabled={loading}>
+              {loading ? "Logging in..." : "Login to SkillLink Account"}
             </Button>
 
             <p className="text-center text-xs text-muted-foreground">

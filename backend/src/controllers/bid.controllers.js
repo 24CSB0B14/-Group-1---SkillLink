@@ -39,7 +39,7 @@ const postBid = asyncHandler(async (req, res) => {
             "Bid submitted successfully"
         )
     );
-})
+});
 
 const acceptBid = asyncHandler(async (req, res) => {
     const { bidId } = req.body
@@ -102,6 +102,109 @@ const acceptBid = asyncHandler(async (req, res) => {
             "Bid accepted and contract created successfully"
         )
     );
-})
+});
 
-export { postBid, acceptBid }
+const getBidsForJob = asyncHandler(async (req, res) => {
+    const { jobId } = req.params;
+
+    const bids = await Bid.find({ job: jobId })
+        .populate("freelancer", "username fullname")
+        .sort({ createdAt: -1 });
+
+    return res
+        .status(200)
+        .json(
+        new ApiResponse(
+            200,
+            bids,
+            "Bids fetched successfully"
+        )
+    );
+});
+
+const getBidById = asyncHandler(async (req, res) => {
+    const { bidId } = req.params;
+
+    const bid = await Bid.findById(bidId)
+        .populate("freelancer", "username fullname")
+        .populate("job");
+
+    if (!bid) {
+        throw new ApiError(404, "Bid not found");
+    }
+
+    return res
+        .status(200)
+        .json(
+        new ApiResponse(
+            200,
+            bid,
+            "Bid fetched successfully"
+        )
+    );
+});
+
+const updateBid = asyncHandler(async (req, res) => {
+    const { bidId } = req.params;
+    const { amount, coverLetter } = req.body;
+
+    const bid = await Bid.findById(bidId);
+
+    if (!bid) {
+        throw new ApiError(404, "Bid not found");
+    }
+
+    // Check if user is the owner of the bid
+    if (bid.freelancer.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to update this bid");
+    }
+
+    const updateData = {};
+    if (amount) updateData.amount = amount;
+    if (coverLetter) updateData.coverLetter = coverLetter;
+
+    const updatedBid = await Bid.findByIdAndUpdate(
+        bidId,
+        { $set: updateData },
+        { new: true }
+    );
+
+    return res
+        .status(200)
+        .json(
+        new ApiResponse(
+            200,
+            updatedBid,
+            "Bid updated successfully"
+        )
+    );
+});
+
+const deleteBid = asyncHandler(async (req, res) => {
+    const { bidId } = req.params;
+
+    const bid = await Bid.findById(bidId);
+
+    if (!bid) {
+        throw new ApiError(404, "Bid not found");
+    }
+
+    // Check if user is the owner of the bid
+    if (bid.freelancer.toString() !== req.user._id.toString()) {
+        throw new ApiError(403, "You are not authorized to delete this bid");
+    }
+
+    await Bid.findByIdAndDelete(bidId);
+
+    return res
+        .status(200)
+        .json(
+        new ApiResponse(
+            200,
+            {},
+            "Bid deleted successfully"
+        )
+    );
+});
+
+export { postBid, acceptBid, getBidsForJob, getBidById, updateBid, deleteBid }

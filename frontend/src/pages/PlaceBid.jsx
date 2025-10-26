@@ -7,10 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { DollarSign, Calendar, Clock, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import jobService from "@/services/job.service";
+import bidService from "@/services/bid.service";
+import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/context/AuthContext";
 
 const PlaceBid = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isFreelancer } = useRole();
+  const { isAuthenticated, user } = useAuth();
   const [job, setJob] = useState(null);
   const [bidData, setBidData] = useState({
     amount: "",
@@ -18,27 +25,96 @@ const PlaceBid = () => {
     proposal: "",
     milestones: []
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API call
-    const mockJob = {
-      id: "SKL-001",
-      title: "Senior UI/UX Designer for Mobile App",
-      budget: 5000,
-      budgetType: "fixed",
-      skills: ["Figma", "UI/UX Design", "Mobile Design"]
-    };
-    setJob(mockJob);
-  }, [id]);
+    // Check if user is authenticated and is a freelancer
+    if (!isAuthenticated) {
+      toast.error("Please login to place a bid");
+      navigate("/login");
+      return;
+    }
+    
+    // Additional check to ensure we have user data
+    if (!user) {
+      toast.error("User data not available");
+      navigate("/login");
+      return;
+    }
+    
+    if (!isFreelancer()) {
+      toast.error("Only freelancers can place bids");
+      navigate("/job-details/" + id);
+      return;
+    }
+    
+    fetchJobDetails();
+  }, [id, isAuthenticated, isFreelancer, navigate, user]);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // Simulate bid submission
-    console.log("Bid submitted:", { jobId: id, ...bidData });
-    navigate("/job-details/" + id);
+  const fetchJobDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await jobService.getJobById(id);
+      // Use actual API response data
+      const jobData = response.data || response;
+      setJob(jobData);
+    } catch (error) {
+      console.error("Failed to fetch job details:", error);
+      toast.error("Failed to load job details");
+      // Fallback to mock data if API fails
+      setJob(mockJob);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  if (!job) return <div>Loading...</div>;
+  const mockJob = {
+    _id: "SKL-001",
+    title: "Senior UI/UX Designer for Mobile App",
+    budget: 5000,
+    budgetType: "fixed",
+    skills: ["Figma", "UI/UX Design", "Mobile Design"]
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const bidPayload = {
+        amount: parseFloat(bidData.amount),
+        timeline: bidData.timeline,
+        proposal: bidData.proposal
+      };
+
+      const response = await bidService.placeBid(id, bidPayload);
+      console.log("Bid submitted:", response);
+      toast.success("Bid submitted successfully!");
+      navigate("/job-details/" + id);
+    } catch (error) {
+      console.error("Failed to submit bid:", error);
+      toast.error(error.message || "Failed to submit bid. Please try again.");
+    }
+  };
+
+  // Show access denied message if user is not a freelancer
+  // Additional check to ensure we have user data
+  if (!isAuthenticated || !user || !isFreelancer()) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="text-muted-foreground mb-6">
+            Only freelancers can place bids on jobs.
+          </p>
+          <Button onClick={() => navigate("/job-details/" + id)}>
+            Back to Job
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (!job) return <div className="min-h-screen bg-background flex items-center justify-center">Job not found</div>;
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -54,7 +130,7 @@ const PlaceBid = () => {
             <div className="space-y-2">
               <h3 className="font-semibold text-lg">{job.title}</h3>
               <div className="flex flex-wrap gap-2">
-                {job.skills.map((skill, index) => (
+                {job.skills?.map((skill, index) => (
                   <Badge key={index} variant="outline">
                     {skill}
                   </Badge>

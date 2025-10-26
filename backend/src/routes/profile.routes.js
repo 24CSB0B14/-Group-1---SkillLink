@@ -5,6 +5,6 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 const router = Router();
 
 router.get("/getProfile", verifyJWT, getProfile)
-router.get("/updateProfile", verifyJWT, updateProfile)
+router.patch("/updateProfile", verifyJWT, updateProfile)
 
 export default router

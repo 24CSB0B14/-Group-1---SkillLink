@@ -8,9 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { X, Plus, DollarSign, Calendar, Clock } from "lucide-react";
+import { toast } from "sonner";
+import jobService from "@/services/job.service";
+import { useAuth } from "@/context/AuthContext";
 
 const PostJob = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -22,6 +26,24 @@ const PostJob = () => {
     category: "",
     experienceLevel: "intermediate"
   });
+  const [loading, setLoading] = useState(false);
+
+  // Ensure we have user data
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="text-muted-foreground mb-6">
+            You must be logged in as a client to post jobs.
+          </p>
+          <Button onClick={() => navigate("/login")}>
+            Go to Login
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   const addSkill = () => {
     if (formData.newSkill && !formData.skills.includes(formData.newSkill)) {
@@ -40,11 +62,66 @@ const PostJob = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate job posting
-    console.log("Job posted:", formData);
-    navigate("/client-dashboard");
+    setLoading(true);
+    
+    // Validate form data before sending
+    const title = formData.title?.trim();
+    const description = formData.description?.trim();
+    const budget = parseFloat(formData.budget);
+    const category = formData.category?.trim();
+    
+    if (!title || title.length < 5) {
+      toast.error("Job title must be at least 5 characters long");
+      setLoading(false);
+      return;
+    }
+    
+    if (!description || description.length < 20) {
+      toast.error("Job description must be at least 20 characters long");
+      setLoading(false);
+      return;
+    }
+    
+    if (!formData.budget || isNaN(budget) || budget < 10) {
+      toast.error("Budget must be a valid number and at least $10");
+      setLoading(false);
+      return;
+    }
+    
+    if (!category) {
+      toast.error("Please select a category");
+      setLoading(false);
+      return;
+    }
+    
+    try {
+      // Prepare job data to match backend expectations
+      const jobData = {
+        title,
+        description,
+        budget,
+        category,
+        type: "OPEN", // Required by backend
+        skills: Array.isArray(formData.skills) ? formData.skills.filter(skill => skill && skill.trim().length > 0) : [],
+        experienceLevel: formData.experienceLevel,
+        deadline: formData.deadline
+      };
+
+      console.log("Sending job data:", jobData);
+      
+      const response = await jobService.createJob(jobData);
+      console.log("Job posted:", response);
+      toast.success("Job posted successfully!");
+      navigate("/client-dashboard");
+    } catch (error) {
+      console.error("Error posting job:", error);
+      console.error("Error response:", error.response);
+      toast.error(error.message || "Failed to post job. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -184,10 +261,10 @@ const PostJob = () => {
 
               {/* Submit Buttons */}
               <div className="flex gap-4 pt-4">
-                <Button type="submit" size="lg" className="flex-1">
-                  Post Job
+                <Button type="submit" size="lg" className="flex-1" disabled={loading}>
+                  {loading ? "Posting Job..." : "Post Job"}
                 </Button>
-                <Button type="button" variant="outline" size="lg" onClick={() => navigate("/client-dashboard")}>
+                <Button type="button" variant="outline" size="lg" onClick={() => navigate("/client-dashboard")} disabled={loading}>
                   Cancel
                 </Button>
               </div>

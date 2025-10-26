@@ -1,9 +1,9 @@
-import mongoose from "mongoose"
+import mongoose from "mongoose";
 
 //connecting database through mongoose
 const connectDB = async () => {
     try {
-        await mongoose.connect(process.env.MONGO_URI)
+        await mongoose.connect(process.env.MONGODB_URI)
         console.log("✅ MongoDB connected")
         console.log("../backend/src/db/index.js")
     }

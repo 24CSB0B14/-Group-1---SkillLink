@@ -7,9 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Star, MapPin, Briefcase, Calendar, DollarSign, Download, MessageCircle } from "lucide-react";
+import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/context/AuthContext";
 
 const PublicProfile = () => {
   const { id } = useParams();
+  const { isClient } = useRole();
+  const { user } = useAuth();
   const [freelancer, setFreelancer] = useState(null);
 
   useEffect(() => {
@@ -82,6 +86,9 @@ const PublicProfile = () => {
 
   if (!freelancer) return <div>Loading...</div>;
 
+  // Additional check to ensure we have user data
+  const canContact = isClient() && user;
+
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -102,15 +109,17 @@ const PublicProfile = () => {
                     <h1 className="text-3xl font-bold">{freelancer.name}</h1>
                     <p className="text-xl text-muted-foreground mt-1">{freelancer.title}</p>
                   </div>
-                  <div className="flex gap-2 mt-4 md:mt-0">
-                    <Button>
-                      <MessageCircle className="w-4 h-4 mr-2" />
-                      Contact
-                    </Button>
-                    <Button variant="outline">
-                      Invite to Job
-                    </Button>
-                  </div>
+                  {canContact && (
+                    <div className="flex gap-2 mt-4 md:mt-0">
+                      <Button>
+                        <MessageCircle className="w-4 h-4 mr-2" />
+                        Contact
+                      </Button>
+                      <Button variant="outline">
+                        Invite to Job
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
@@ -225,7 +234,7 @@ const PublicProfile = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {freelancer.workHistory.map((job, index) => (
-                  <div key={index} className="flex gap-4 pb-6 border-b last:border-b-0 last:pb-0">
+                  <div key={index} className="flex gap-4 pb-6 border-b last:border-b-0 last:pb-0 last:mb-0">
                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                       <Briefcase className="w-6 h-6 text-primary" />
                     </div>

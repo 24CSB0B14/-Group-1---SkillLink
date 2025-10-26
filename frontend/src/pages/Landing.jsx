@@ -1,8 +1,44 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Briefcase, Search, Rocket } from "lucide-react";
+import { useEffect, useState } from "react";
+import api from "@/services/api";
+import ConnectionTest from "@/components/ConnectionTest";
+import TestAPIConnection from "@/components/TestAPIConnection";
 
 const Landing = () => {
+  const [healthStatus, setHealthStatus] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true; // Flag to prevent state updates after component unmount
+    
+    const checkHealth = async () => {
+      setLoading(true);
+      try {
+        const response = await api.get('/healthCheck');
+        if (isMounted) { // Only update state if component is still mounted
+          setHealthStatus(response.data);
+        }
+      } catch (error) {
+        if (isMounted) { // Only update state if component is still mounted
+          setHealthStatus({ status: 'error', message: 'Backend not connected' });
+        }
+      } finally {
+        if (isMounted) { // Only update state if component is still mounted
+          setLoading(false);
+        }
+      }
+    };
+
+    checkHealth();
+    
+    // Cleanup function to set isMounted to false when component unmounts
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty dependency array means this effect runs once on mount
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -14,6 +50,16 @@ const Landing = () => {
                 <span className="text-primary-foreground font-bold text-lg">S</span>
               </div>
               <h1 className="text-xl font-bold text-header-foreground">SkillLink</h1>
+              {/* Health Check Status */}
+              <div className="ml-4">
+                {loading ? (
+                  <span className="text-sm text-yellow-500">Checking...</span>
+                ) : healthStatus ? (
+                  <span className={`text-sm ${healthStatus.status === 'OK' ? 'text-green-500' : 'text-red-500'}`}>
+                    {healthStatus.status === 'OK' ? 'Backend Connected' : 'Backend Disconnected'}
+                  </span>
+                ) : null}
+              </div>
             </div>
             <nav className="flex items-center gap-6">
               <a href="#about" className="text-header-foreground/80 hover:text-header-foreground transition">
@@ -22,6 +68,9 @@ const Landing = () => {
               <a href="#how-it-works" className="text-header-foreground/80 hover:text-header-foreground transition">
                 How It Works
               </a>
+              <Link to="/api-test" className="text-header-foreground/80 hover:text-header-foreground transition">
+                API Test
+              </Link>
             </nav>
           </div>
         </div>
@@ -53,6 +102,20 @@ const Landing = () => {
               </Link>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Connection Test Section */}
+      <section className="py-8 bg-card">
+        <div className="container mx-auto px-4">
+          <ConnectionTest />
+        </div>
+      </section>
+
+      {/* API Connection Test Section */}
+      <section className="py-8 bg-card">
+        <div className="container mx-auto px-4">
+          <TestAPIConnection />
         </div>
       </section>
 

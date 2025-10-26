@@ -1,5 +1,5 @@
 // pages/SearchJobs.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,16 +7,44 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, DollarSign, Calendar, Clock, MapPin, Star } from "lucide-react";
+import { toast } from "sonner";
+import jobService from "@/services/job.service";
+import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/context/AuthContext";
 
 const SearchJobs = () => {
+  const { isFreelancer } = useRole();
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [budgetRange, setBudgetRange] = useState("all");
   const [experienceLevel, setExperienceLevel] = useState("all");
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const jobs = [
+  useEffect(() => {
+    fetchJobs();
+  }, []);
+
+  const fetchJobs = async () => {
+    try {
+      setLoading(true);
+      const response = await jobService.getAllJobs();
+      // Use actual API response data
+      const jobsData = response.data || response;
+      setJobs(jobsData);
+    } catch (error) {
+      console.error("Failed to fetch jobs:", error);
+      toast.error("Failed to load jobs");
+      // Fallback to mock data if API fails
+      setJobs(mockJobs);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const mockJobs = [
     {
-      id: "SKL-001",
+      _id: "SKL-001",
       title: "Senior UI/UX Designer for Mobile App",
       description: "We need an experienced UI/UX designer to redesign our mobile banking application with focus on user experience and modern design principles.",
       budget: 5000,
@@ -35,7 +63,7 @@ const SearchJobs = () => {
       featured: true
     },
     {
-      id: "SKL-002",
+      _id: "SKL-002",
       title: "Full-Stack React Developer",
       description: "Looking for a full-stack developer to build a responsive web application with React frontend and Node.js backend.",
       budget: 45,
@@ -54,7 +82,7 @@ const SearchJobs = () => {
       featured: false
     },
     {
-      id: "SKL-003",
+      _id: "SKL-003",
       title: "Content Writer for Tech Blog",
       description: "Need a skilled content writer to create engaging articles about technology trends and software development.",
       budget: 1200,
@@ -93,6 +121,9 @@ const SearchJobs = () => {
 
     return matchesSearch && matchesCategory && matchesExperience;
   });
+
+  // Additional check to ensure we have user data
+  const canApply = isFreelancer() && user;
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -165,10 +196,17 @@ const SearchJobs = () => {
           </CardContent>
         </Card>
 
+        {/* Loading state */}
+        {loading && (
+          <div className="text-center py-12">
+            <p>Loading jobs...</p>
+          </div>
+        )}
+
         {/* Job Listings */}
         <div className="space-y-6">
           {filteredJobs.map((job) => (
-            <Card key={job.id} className={`hover:shadow-lg transition ${job.featured ? 'border-primary/20 bg-primary/5' : ''}`}>
+            <Card key={job._id} className={`hover:shadow-lg transition ${job.featured ? 'border-primary/20 bg-primary/5' : ''}`}>
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex-1">
@@ -182,12 +220,12 @@ const SearchJobs = () => {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                       <div className="flex items-center gap-1">
                         <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span>{job.client.rating}</span>
+                        <span>{job.client?.rating || "N/A"}</span>
                       </div>
                       <span>•</span>
-                      <span>{job.client.name}</span>
+                      <span>{job.client?.name || "Unknown Client"}</span>
                       <span>•</span>
-                      <span>${job.client.totalSpent.toLocaleString()} total spent</span>
+                      <span>${job.client?.totalSpent?.toLocaleString() || 0} total spent</span>
                     </div>
 
                     <p className="text-muted-foreground mb-4 line-clamp-2">
@@ -195,7 +233,7 @@ const SearchJobs = () => {
                     </p>
 
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {job.skills.map((skill, index) => (
+                      {job.skills?.map((skill, index) => (
                         <Badge key={index} variant="outline">
                           {skill}
                         </Badge>
@@ -211,35 +249,37 @@ const SearchJobs = () => {
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        <span>{job.duration}</span>
+                        <span>{job.duration || "Not specified"}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{job.posted}</span>
+                        <span>{job.posted || "Recently"}</span>
                       </div>
-                      <span>{job.proposals} proposals</span>
+                      <span>{job.proposals || 0} proposals</span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 ml-4">
-                    <Button asChild>
-                      <Link to={`/job-details/${job.id}`}>
-                        Apply Now
-                      </Link>
-                    </Button>
-                    <Button variant="outline" asChild>
-                      <Link to={`/job-details/${job.id}`}>
-                        View Details
-                      </Link>
-                    </Button>
-                  </div>
+                  {canApply && (
+                    <div className="flex flex-col gap-2 ml-4">
+                      <Button asChild>
+                        <Link to={`/job-details/${job._id}`}>
+                          Apply Now
+                        </Link>
+                      </Button>
+                      <Button variant="outline" asChild>
+                        <Link to={`/job-details/${job._id}`}>
+                          View Details
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {filteredJobs.length === 0 && (
+        {filteredJobs.length === 0 && !loading && (
           <div className="text-center py-12">
             <Search className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
             <h3 className="text-lg font-semibold mb-2">No jobs found</h3>
