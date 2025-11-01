@@ -23,6 +23,7 @@ connectDB()
         credentials: true,
         methods: ["GET", "POST"],
       },
+      transports: ['websocket', 'polling'],
     });
 
     // Make io accessible to routes
@@ -34,14 +35,22 @@ connectDB()
 
       // Join chat room (conversation)
       socket.on("joinRoom", (conversationId) => {
-        socket.join(conversationId);
-        console.log(`User joined room: ${conversationId}`);
+        if (conversationId) {
+          socket.join(conversationId);
+          console.log(`User ${socket.id} joined room: ${conversationId}`);
+        }
       });
 
       // Send message event
       socket.on("sendMessage", async (data) => {
         try {
           const { conversationId, sender, text, fileUrl } = data;
+
+          // Validate required fields
+          if (!conversationId || !sender || !text) {
+            console.error("Missing required fields for sendMessage");
+            return;
+          }
 
           // Save message to DB
           const message = await Message.create({
@@ -52,10 +61,11 @@ connectDB()
           });
 
           // Populate sender info before emitting
-          const populatedMessage = await Message.findById(message._id).populate("sender", "name email role");
+          const populatedMessage = await Message.findById(message._id).populate("sender", "username email role avatar");
 
           // Emit message to all users in that conversation
           io.to(conversationId).emit("newMessage", populatedMessage);
+          console.log(`Message sent to room ${conversationId}:`, populatedMessage.text);
         } catch (error) {
           console.error("Error saving message:", error);
         }

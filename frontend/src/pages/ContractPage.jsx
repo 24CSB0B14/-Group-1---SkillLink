@@ -13,7 +13,7 @@ import Footer from "@/components/Footer";
 import Loading from "@/components/Loading";
 
 const ContractPage = () => {
-  const { id } = useParams();
+  const { contractId } = useParams();
   const navigate = useNavigate();
   const [contract, setContract] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,13 +21,13 @@ const ContractPage = () => {
 
   useEffect(() => {
     fetchContract();
-  }, [id]);
+  }, [contractId]);
 
   const fetchContract = async () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await contractService.getContractById(id);
+      const response = await contractService.getContractById(contractId);
       const contractData = response.data || response;
       if (contractData) {
         setContract(contractData);

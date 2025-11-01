@@ -5,6 +5,7 @@ import { ApiResponse } from "../utils/api-response.js";
 import { UserRolesEnum } from "../utils/constants.js";
 import { Job } from "../models/job.models.js";
 import { Contract } from "../models/contract.models.js";
+import { Conversation } from "../models/conversations.models.js";
 import { createNotification } from "./notification.controllers.js";
 
 const postBid = asyncHandler(async (req, res) => {
@@ -112,6 +113,13 @@ const acceptBid = asyncHandler(async (req, res) => {
     job.assignedFreelancer = bid.freelancer._id;
     await job.save();
 
+    // Create conversation between client and freelancer
+    const conversation = await Conversation.create({
+        participants: [job.client, bid.freelancer._id],
+        job: job._id,
+        contract: contract._id
+    });
+
     // Create notification for freelancer
     await createNotification({
         recipient: bid.freelancer._id,
@@ -134,7 +142,7 @@ const acceptBid = asyncHandler(async (req, res) => {
         .json(
         new ApiResponse(
             200,
-            { contract: populatedContract, acceptedBid: bid },
+            { contract: populatedContract, acceptedBid: bid, conversation },
             "Bid accepted and contract created successfully"
         )
     );

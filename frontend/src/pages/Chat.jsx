@@ -33,22 +33,39 @@ const Chat = () => {
       const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
       const newSocket = io(socketUrl, {
         withCredentials: true,
+        transports: ['websocket', 'polling'],
       });
 
       newSocket.on('connect', () => {
-        console.log('Connected to Socket.io');
+        console.log('Connected to Socket.io with ID:', newSocket.id);
         if (conversationId) {
           newSocket.emit('joinRoom', conversationId);
+          console.log(`Joined room: ${conversationId}`);
         }
       });
 
       newSocket.on('newMessage', (message) => {
+        console.log('Received new message:', message);
         setMessages(prev => [...prev, message]);
+      });
+
+      newSocket.on('connect_error', (error) => {
+        console.error('Socket connection error:', error);
+        toast({
+          title: "Connection Error",
+          description: "Failed to connect to chat server. Please refresh the page.",
+          variant: "destructive",
+        });
+      });
+
+      newSocket.on('disconnect', (reason) => {
+        console.log('Socket disconnected:', reason);
       });
 
       setSocket(newSocket);
 
       return () => {
+        console.log('Disconnecting socket');
         newSocket.disconnect();
       };
     } catch (error) {
@@ -133,7 +150,16 @@ const Chat = () => {
 
   const handleSendMessage = async (e) => {
     e.preventDefault();
-    if (!newMessage.trim() || !socket) return;
+    if (!newMessage.trim() || !socket || !socket.connected) {
+      if (!socket || !socket.connected) {
+        toast({
+          title: "Connection Error",
+          description: "Not connected to chat server. Please refresh the page.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
 
     try {
       // Send via Socket.io
@@ -144,6 +170,21 @@ const Chat = () => {
         fileUrl: null,
       });
 
+      // Add message to UI immediately (optimistic update)
+      const tempMessage = {
+        _id: Date.now().toString(),
+        conversationId,
+        sender: {
+          _id: user._id || user.id,
+          username: user.username,
+          email: user.email,
+          role: user.role
+        },
+        text: newMessage,
+        createdAt: new Date().toISOString()
+      };
+      
+      setMessages(prev => [...prev, tempMessage]);
       setNewMessage("");
     } catch (error) {
       console.error('Error sending message:', error);

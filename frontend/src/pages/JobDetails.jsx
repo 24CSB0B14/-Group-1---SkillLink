@@ -100,10 +100,17 @@ const JobDetails = () => {
 
   const handleAcceptBid = async (bidId) => {
     try {
-      await bidService.acceptBid(bidId);
+      const response = await bidService.acceptBid(bidId);
       toast.success("Bid accepted successfully!");
-      fetchJobDetails();
-      fetchBids();
+      
+      // If a conversation was created, redirect to chat
+      if (response.data?.conversation?._id) {
+        navigate(`/chat/${response.data.conversation._id}`);
+      } else {
+        // Otherwise, refresh the job details and bids
+        fetchJobDetails();
+        fetchBids();
+      }
     } catch (error) {
       console.error("Failed to accept bid:", error);
       toast.error(error.response?.data?.message || error.message || "Failed to accept bid");
@@ -248,6 +255,16 @@ const JobDetails = () => {
                             size="sm"
                           >
                             Accept Bid
+                          </Button>
+                        )}
+                        {user && bid.status === "accepted" && (
+                          <Button 
+                            onClick={() => navigate(`/chat/${bid.conversation?._id || job.conversation?._id}`)}
+                            className="mt-2"
+                            size="sm"
+                            variant="outline"
+                          >
+                            Start Chat
                           </Button>
                         )}
                       </div>

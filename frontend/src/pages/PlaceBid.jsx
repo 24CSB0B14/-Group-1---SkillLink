@@ -14,7 +14,7 @@ import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
 
 const PlaceBid = () => {
-  const { id } = useParams();
+  const { jobId } = useParams();
   const navigate = useNavigate();
   const { isFreelancer, userRole } = useRole();
   const { isAuthenticated, user } = useAuth();
@@ -43,12 +43,12 @@ const PlaceBid = () => {
     
     if (userRole !== "freelancer") {
       toast.error("Only freelancers can place bids");
-      navigate("/job-details/" + id);
+      navigate("/job-details/" + jobId);
       return false;
     }
     
     return true;
-  }, [isAuthenticated, user, userRole, id, navigate]);
+  }, [isAuthenticated, user, userRole, jobId, navigate]);
 
   useEffect(() => {
     const hasAccess = checkFreelancerAccess();
@@ -60,7 +60,7 @@ const PlaceBid = () => {
   const fetchJobDetails = async () => {
     try {
       setLoading(true);
-      const response = await jobService.getJobById(id);
+      const response = await jobService.getJobById(jobId);
       // Use actual API response data
       const jobData = response.data || response;
       setJob(jobData);
@@ -78,8 +78,6 @@ const PlaceBid = () => {
     }
   };
 
-
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -88,9 +86,9 @@ const PlaceBid = () => {
         coverLetter: bidData.proposal  // Map proposal to coverLetter for backend
       };
 
-      const response = await bidService.placeBid(id, bidPayload);
+      const response = await bidService.placeBid(jobId, bidPayload);
       toast.success("Bid submitted successfully!");
-      navigate("/job-details/" + id);
+      navigate("/job-details/" + jobId);
     } catch (error) {
       console.error('Error submitting bid:', error);
       if (error.response?.data?.message) {
@@ -113,7 +111,7 @@ const PlaceBid = () => {
           <p className="text-muted-foreground mb-6">
             Only freelancers can place bids on jobs.
           </p>
-          <Button onClick={() => navigate("/job-details/" + id)}>
+          <Button onClick={() => navigate("/job-details/" + jobId)}>
             Back to Job
           </Button>
         </div>
@@ -127,7 +125,7 @@ const PlaceBid = () => {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4 max-w-4xl">
-        <Button variant="ghost" onClick={() => navigate("/job-details/" + id)} className="mb-6">
+        <Button variant="ghost" onClick={() => navigate("/job-details/" + jobId)} className="mb-6">
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Job
         </Button>
@@ -199,24 +197,16 @@ const PlaceBid = () => {
                 <Button type="submit" size="lg" className="flex-1">
                   Submit Bid
                 </Button>
-                <Button type="button" variant="outline" size="lg" onClick={() => navigate("/job-details/" + id)}>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="lg" 
+                  onClick={() => navigate("/job-details/" + jobId)}
+                >
                   Cancel
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Tips Card */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="text-lg">Bidding Tips</CardTitle>
-          </CardHeader>
-          <CardContent className="text-sm text-muted-foreground space-y-2">
-            <p>• Research similar projects to set a competitive price</p>
-            <p>• Be specific about your approach and timeline</p>
-            <p>• Highlight relevant experience and portfolio items</p>
-            <p>• Ask clarifying questions if job details are unclear</p>
           </CardContent>
         </Card>
       </div>
