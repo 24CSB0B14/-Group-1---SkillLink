@@ -35,7 +35,14 @@ const ReviewRating = () => {
         navigate('/');
       }
     } catch (error) {
-      toast.error("Failed to load contract");
+      console.error('Error fetching contract:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to load contract: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to load contract: ${error.message}`);
+      } else {
+        toast.error("Failed to load contract. Please try again later.");
+      }
       navigate('/');
     } finally {
       setLoading(false);
@@ -65,7 +72,14 @@ const ReviewRating = () => {
       toast.success("Review submitted successfully!");
       navigate("/");
     } catch (error) {
-      toast.error(error.message || "Failed to submit review");
+      console.error('Error submitting review:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to submit review: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to submit review: ${error.message}`);
+      } else {
+        toast.error("Failed to submit review. Please try again later.");
+      }
     } finally {
       setSubmitting(false);
     }

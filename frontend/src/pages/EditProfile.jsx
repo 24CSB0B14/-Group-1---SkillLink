@@ -7,71 +7,175 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { X, Plus, Upload } from "lucide-react";
+import { X, Plus, Upload, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import profileService from "@/services/profile.service";
 
 const EditProfile = () => {
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const { user, setUser } = useAuth();
+  const [profile, setProfile] = useState({});
+  const [loading, setLoading] = useState(true);
   const [skillInput, setSkillInput] = useState("");
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("skilllink_user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
+    fetchProfile();
+  }, []);
 
-  if (!user) return null;
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const response = await profileService.getUserProfile();
+      const userData = response.data || response;
+      
+      // Extract profile data based on user role
+      let profileData = {};
+      if (userData.role === "freelancer" && userData.freelancerProfile) {
+        profileData = userData.freelancerProfile;
+      } else if (userData.role === "client" && userData.clientProfile) {
+        profileData = userData.clientProfile;
+      }
+      
+      // Merge user and profile data
+      setProfile({
+        ...profileData,
+        displayName: userData.username,
+        email: userData.email,
+        role: userData.role
+      });
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error("Failed to load profile data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-accent via-accent/90 to-header flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4">Loading profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    navigate("/login");
+    return null;
+  }
 
   const isFreelancer = user.role === "freelancer";
-  const profile = user.profile || {};
 
-  const updateProfile = (updates) => {
-    setUser({
-      ...user,
-      profile: { ...profile, ...updates },
-    });
+  const updateProfileState = (updates) => {
+    setProfile(prev => ({ ...prev, ...updates }));
   };
 
   const addSkill = () => {
-    if (skillInput.trim() && !(profile.skills || []).includes(skillInput.trim())) {
-      updateProfile({ skills: [...(profile.skills || []), skillInput.trim()] });
-      setSkillInput("");
+    try {
+      if (skillInput.trim() && !(profile.skills || []).includes(skillInput.trim())) {
+        updateProfileState({ skills: [...(profile.skills || []), skillInput.trim()] });
+        setSkillInput("");
+      }
+    } catch (error) {
+      console.error('Error adding skill:', error);
+      toast.error("Failed to add skill");
     }
   };
 
   const removeSkill = (skill) => {
-    updateProfile({ skills: profile.skills.filter((s) => s !== skill) });
+    try {
+      updateProfileState({ skills: (profile.skills || []).filter((s) => s !== skill) });
+    } catch (error) {
+      console.error('Error removing skill:', error);
+      toast.error("Failed to remove skill");
+    }
   };
 
   const addPortfolioLink = () => {
-    updateProfile({ portfolioLinks: [...(profile.portfolioLinks || [""]), ""] });
+    try {
+      updateProfileState({ portfolioLinks: [...(profile.portfolioLinks || []), ""] });
+    } catch (error) {
+      console.error('Error adding portfolio link:', error);
+      toast.error("Failed to add portfolio link");
+    }
   };
 
   const updatePortfolioLink = (index, value) => {
-    const newLinks = [...(profile.portfolioLinks || [""])];
-    newLinks[index] = value;
-    updateProfile({ portfolioLinks: newLinks });
+    try {
+      const newLinks = [...(profile.portfolioLinks || [])];
+      newLinks[index] = value;
+      updateProfileState({ portfolioLinks: newLinks });
+    } catch (error) {
+      console.error('Error updating portfolio link:', error);
+      toast.error("Failed to update portfolio link");
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    localStorage.setItem("skilllink_user", JSON.stringify(user));
-    toast.success("Profile updated successfully!");
     
-    if (isFreelancer) {
-      navigate("/freelancer-dashboard");
-    } else {
-      navigate("/client-dashboard");
+    try {
+      setLoading(true);
+      
+      // Prepare profile data for submission
+      const profileData = { ...profile };
+      
+      // Remove fields that shouldn't be sent to backend
+      delete profileData.displayName;
+      delete profileData.email;
+      delete profileData.role;
+      
+      // Convert skills array to comma-separated string if needed
+      if (Array.isArray(profileData.skills)) {
+        profileData.skills = profileData.skills.join(', ');
+      }
+      
+      const response = await profileService.updateUserProfile(profileData);
+      
+      // Update the user context with the new profile data
+      const updatedUser = {
+        ...user,
+        freelancerProfile: isFreelancer ? response.data : user.freelancerProfile,
+        clientProfile: !isFreelancer ? response.data : user.clientProfile
+      };
+      
+      setUser(updatedUser);
+      
+      toast.success("Profile updated successfully!");
+      
+      if (isFreelancer) {
+        navigate("/freelancer-dashboard");
+      } else {
+        navigate("/client-dashboard");
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to update profile: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to update profile: ${error.message}`);
+      } else {
+        toast.error("Failed to update profile. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-accent via-accent/90 to-header p-4 py-8">
       <div className="container mx-auto max-w-6xl">
+        <div className="flex items-center gap-3 mb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-2xl font-bold">Edit Profile</h1>
+        </div>
+        
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Profile Card */}
           <Card className="lg:col-span-1">
@@ -79,9 +183,9 @@ const EditProfile = () => {
               <div className="text-center space-y-4">
                 <div className="relative inline-block">
                   <Avatar className="w-32 h-32 mx-auto">
-                    <AvatarImage src="" />
+                    <AvatarImage src={user.avatar?.url || ""} />
                     <AvatarFallback className="text-3xl bg-primary text-primary-foreground">
-                      {profile.displayName?.[0] || user.name?.[0] || "U"}
+                      {user.username?.[0] || "U"}
                     </AvatarFallback>
                   </Avatar>
                   <Button
@@ -94,9 +198,9 @@ const EditProfile = () => {
                 </div>
 
                 <div>
-                  <h3 className="font-semibold text-lg">{profile.displayName || user.name}</h3>
+                  <h3 className="font-semibold text-lg">{user.username || "User"}</h3>
                   <p className="text-sm text-muted-foreground">
-                    {isFreelancer ? "Freelancer" : "Client"} at S.L Planety
+                    {isFreelancer ? "Freelancer" : "Client"}
                   </p>
                 </div>
 
@@ -128,8 +232,8 @@ const EditProfile = () => {
                     <Label htmlFor="displayName">Name</Label>
                     <Input
                       id="displayName"
-                      value={profile.displayName || ""}
-                      onChange={(e) => updateProfile({ displayName: e.target.value })}
+                      value={user.username || ""}
+                      disabled
                     />
                   </div>
 
@@ -139,7 +243,7 @@ const EditProfile = () => {
                       <Input
                         id="companyName"
                         value={profile.companyName || ""}
-                        onChange={(e) => updateProfile({ companyName: e.target.value })}
+                        onChange={(e) => updateProfileState({ companyName: e.target.value })}
                       />
                     </div>
                   )}
@@ -149,8 +253,9 @@ const EditProfile = () => {
                     <Textarea
                       id="bio"
                       value={profile.bio || ""}
-                      onChange={(e) => updateProfile({ bio: e.target.value })}
+                      onChange={(e) => updateProfileState({ bio: e.target.value })}
                       rows={4}
+                      placeholder="Tell us about yourself..."
                     />
                   </div>
                 </div>
@@ -171,18 +276,19 @@ const EditProfile = () => {
                             onChange={(e) => setSkillInput(e.target.value)}
                             onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addSkill())}
                           />
-                          <Button type="button" onClick={addSkill} size="icon">
+                          <Button type="button" onClick={addSkill} size="icon" disabled={loading}>
                             <Plus size={20} />
                           </Button>
                         </div>
                         <div className="flex flex-wrap gap-2 mt-2">
-                          {(profile.skills || []).map((skill) => (
-                            <Badge key={skill} className="gap-1">
+                          {(profile.skills || []).map((skill, index) => (
+                            <Badge key={index} className="gap-1">
                               {skill}
                               <button
                                 type="button"
                                 onClick={() => removeSkill(skill)}
                                 className="ml-1 hover:text-destructive"
+                                disabled={loading}
                               >
                                 <X size={14} />
                               </button>
@@ -202,7 +308,7 @@ const EditProfile = () => {
                             className="pl-7"
                             placeholder="75.00"
                             value={profile.hourlyRate || ""}
-                            onChange={(e) => updateProfile({ hourlyRate: e.target.value })}
+                            onChange={(e) => updateProfileState({ hourlyRate: e.target.value })}
                           />
                         </div>
                         <p className="text-xs text-muted-foreground">Currency: USD</p>
@@ -224,6 +330,7 @@ const EditProfile = () => {
                         variant="outline"
                         onClick={addPortfolioLink}
                         className="w-full"
+                        disabled={loading}
                       >
                         + Add Another Link
                       </Button>
@@ -231,8 +338,8 @@ const EditProfile = () => {
                   </>
                 )}
 
-                <Button type="submit" className="w-full" size="lg">
-                  Save Changes
+                <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                  {loading ? "Saving..." : "Save Changes"}
                 </Button>
               </form>
             </CardContent>

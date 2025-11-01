@@ -43,7 +43,14 @@ const FreelancerEarnings = () => {
         availableBalance: total - pending
       });
     } catch (error) {
-      toast.error("Failed to load earnings");
+      console.error('Error fetching earnings:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to load earnings: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to load earnings: ${error.message}`);
+      } else {
+        toast.error("Failed to load earnings. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }

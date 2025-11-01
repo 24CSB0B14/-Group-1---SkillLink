@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import { Schema } from "mongoose";
 import { CONTRACT_STATUS } from "../utils/constants.js";
+import { Bid } from "./bid.models.js";
+import { Notification } from "./notification.models.js";
 
 const jobSchema = new Schema({
     title: {
@@ -86,4 +88,56 @@ jobSchema.post('save', function(error, doc, next) {
     next(error);
 });
 
-export const Job = mongoose.model("Job", jobSchema)
+// Pre-remove middleware to handle cascading deletions
+jobSchema.pre('remove', async function(next) {
+    try {
+        const jobId = this._id;
+        
+        // Find all bids for this job
+        const bids = await Bid.find({ job: jobId });
+        const bidIds = bids.map(bid => bid._id);
+        
+        // Delete all bids associated with this job
+        await Bid.deleteMany({ job: jobId });
+        
+        // Delete notifications related to the job and its bids
+        await Notification.deleteMany({
+            $or: [
+                { relatedId: jobId, relatedModel: "Job" },
+                { relatedId: { $in: bidIds }, relatedModel: "Bid" }
+            ]
+        });
+        
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Pre-deleteOne middleware for findByIdAndDelete
+jobSchema.pre('deleteOne', { document: true, query: false }, async function(next) {
+    try {
+        const jobId = this._id;
+        
+        // Find all bids for this job
+        const bids = await Bid.find({ job: jobId });
+        const bidIds = bids.map(bid => bid._id);
+        
+        // Delete all bids associated with this job
+        await Bid.deleteMany({ job: jobId });
+        
+        // Delete notifications related to the job and its bids
+        await Notification.deleteMany({
+            $or: [
+                { relatedId: jobId, relatedModel: "Job" },
+                { relatedId: { $in: bidIds }, relatedModel: "Bid" }
+            ]
+        });
+        
+        next();
+    } catch (error) {
+        next(error);
+    }
+});
+
+export const Job = mongoose.model("Job", jobSchema);

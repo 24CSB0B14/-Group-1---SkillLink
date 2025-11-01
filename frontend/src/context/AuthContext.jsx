@@ -12,36 +12,40 @@ export const AuthProvider = ({ children }) => {
 
   // Check if user is logged in
   useEffect(() => {
-    let isMounted = true; // Flag to prevent state updates after component unmount
+    let isMounted = true;
     
     const checkAuthStatus = async () => {
       try {
         const response = await authService.getCurrentUser();
-        if (isMounted) { // Only update state if component is still mounted
+        if (isMounted) {
           if (response && response.data) {
-            // Handle response format: response.data contains the user object
             const userData = response.data;
             setUser(userData);
             setIsAuthenticated(true);
+          } else if (response && response.user) {
+            // Handle case where response directly contains user object
+            const userData = response.user;
+            setUser(userData);
+            setIsAuthenticated(true);
           } else if (response) {
-            // Handle case where response is directly the user object
             setUser(response);
             setIsAuthenticated(true);
           } else {
-            // No user data returned
             setUser(null);
             setIsAuthenticated(false);
           }
         }
       } catch (error) {
-        // User is not authenticated or there was an error
-        console.error("Auth check failed:", error);
-        if (isMounted) { // Only update state if component is still mounted
+        // Only log error if it's not a 401 (unauthorized)
+        if (error.response?.status !== 401) {
+          console.error('Auth check error:', error);
+        }
+        if (isMounted) {
           setUser(null);
           setIsAuthenticated(false);
         }
       } finally {
-        if (isMounted) { // Only update state if component is still mounted
+        if (isMounted) {
           setLoading(false);
         }
       }
@@ -49,11 +53,10 @@ export const AuthProvider = ({ children }) => {
 
     checkAuthStatus();
     
-    // Cleanup function to set isMounted to false when component unmounts
     return () => {
       isMounted = false;
     };
-  }, []); // Empty dependency array means this effect runs once on mount
+  }, []);
 
   // Login function
   const login = async (credentials) => {
@@ -62,30 +65,33 @@ export const AuthProvider = ({ children }) => {
       
       // Handle different response formats
       let userData = null;
-      let token = null;
       
       if (response && response.data) {
         // Standard format: response.data contains user data
         userData = response.data.user || response.data;
-        token = response.data.accessToken || response.data.token;
-      } else if (response) {
+      } else if (response && response.user) {
         // Direct format: response is the user object
-        userData = response.user || response;
-        token = response.accessToken || response.token;
+        userData = response.user;
+      } else if (response) {
+        userData = response;
       }
       
       if (userData) {
+        // Update state immediately and synchronously
         setUser(userData);
         setIsAuthenticated(true);
+        setLoading(false);
         return { success: true, data: userData };
       } else {
+        setUser(null);
+        setIsAuthenticated(false);
         return { success: false, error: "Invalid response from server" };
       }
     } catch (error) {
       // Ensure user is logged out on login failure
       setUser(null);
       setIsAuthenticated(false);
-      return { success: false, error: error.message || "Login failed" };
+      return { success: false, error: error.response?.data?.message || error.message || "Login failed" };
     }
   };
 
@@ -119,7 +125,7 @@ export const AuthProvider = ({ children }) => {
       // Ensure user is logged out on signup failure
       setUser(null);
       setIsAuthenticated(false);
-      return { success: false, error: error.message || "Signup failed" };
+      return { success: false, error: error.response?.data?.message || error.message || "Signup failed" };
     }
   };
 
@@ -127,13 +133,18 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       await authService.logout();
+      // Ensure state is cleared synchronously
       setUser(null);
       setIsAuthenticated(false);
+      // Force a small delay to ensure state updates propagate
+      await new Promise(resolve => setTimeout(resolve, 100));
       return { success: true };
     } catch (error) {
       // Even if logout fails on the server, we still clear local state
       setUser(null);
       setIsAuthenticated(false);
+      // Force a small delay to ensure state updates propagate
+      await new Promise(resolve => setTimeout(resolve, 100));
       return { success: true, error: error.message || "Logout completed locally" };
     }
   };

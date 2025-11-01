@@ -12,6 +12,9 @@ import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import profileService from "@/services/profile.service";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import Loading from "@/components/Loading";
 
 const FreelancerDirectory = () => {
   const { isClient } = useRole();
@@ -23,46 +26,74 @@ const FreelancerDirectory = () => {
   const [rateFilter, setRateFilter] = useState("all");
 
   useEffect(() => {
-    fetchFreelancers();
+    try {
+      fetchFreelancers();
+    } catch (error) {
+      console.error('Error initializing freelancer directory:', error);
+      toast.error("Failed to initialize freelancer directory");
+    }
   }, []);
 
   const fetchFreelancers = async () => {
     try {
       setLoading(true);
-      const response = await profileService.getAllFreelancers({ search: searchTerm });
-      const data = response.data || [];
-      setFreelancers(data);
+      const params = {};
+      if (searchTerm) {
+        params.search = searchTerm;
+      }
+      const response = await profileService.getAllFreelancers(params);
+      const data = response.data || response || [];
+      setFreelancers(Array.isArray(data) ? data : []);
     } catch (error) {
-      toast.error("Failed to load freelancers");
+      console.error('Error fetching freelancers:', error);
+      setFreelancers([]);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to load freelancers: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to load freelancers: ${error.message}`);
+      } else {
+        toast.error("Failed to load freelancers. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleSearch = () => {
-    fetchFreelancers();
+    try {
+      fetchFreelancers();
+    } catch (error) {
+      console.error('Error handling search:', error);
+      toast.error("Failed to perform search");
+    }
   };
 
   const filteredFreelancers = freelancers.filter(freelancer => {
-    const profile = freelancer.freelancerProfile;
-    if (!profile) return false;
-    
-    const matchesExperience = experienceFilter === "all" || profile.experience === experienceFilter;
+    const profile = freelancer.freelancerProfile || {};
+    const matchesExperience = experienceFilter === "all" || (profile.experience || "") === experienceFilter;
     const matchesRate = rateFilter === "all" || 
-                       (rateFilter === "low" && profile.hourlyRate < 50) ||
-                       (rateFilter === "medium" && profile.hourlyRate >= 50 && profile.hourlyRate < 80) ||
-                       (rateFilter === "high" && profile.hourlyRate >= 80);
+                       (rateFilter === "low" && (profile.hourlyRate || 0) < 50) ||
+                       (rateFilter === "medium" && (profile.hourlyRate || 0) >= 50 && (profile.hourlyRate || 0) < 80) ||
+                       (rateFilter === "high" && (profile.hourlyRate || 0) >= 80);
 
-    return matchesExperience && matchesRate;
+    // Search term filter
+    const matchesSearch = !searchTerm || 
+                         (freelancer.username || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (profile.title || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (profile.bio || "").toLowerCase().includes(searchTerm.toLowerCase());
+
+    return matchesExperience && matchesRate && matchesSearch;
   });
 
   const canInvite = isClient() && user;
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (loading) return <Loading />;
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 py-8">
+        <div className="container mx-auto px-4 max-w-7xl">
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold">Find Freelancers</h1>
@@ -71,7 +102,7 @@ const FreelancerDirectory = () => {
             </p>
           </div>
           {canInvite && (
-            <Button asChild>
+            <Button asChild className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
               <Link to="/post-job">Post a Job</Link>
             </Button>
           )}
@@ -92,7 +123,7 @@ const FreelancerDirectory = () => {
                 />
               </div>
               
-              <Button onClick={handleSearch}>
+              <Button onClick={handleSearch} className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
                 Search
               </Button>
               
@@ -137,18 +168,18 @@ const FreelancerDirectory = () => {
           {filteredFreelancers.map((freelancer) => {
             const profile = freelancer.freelancerProfile || {};
             return (
-            <Card key={freelancer._id} className="hover:shadow-lg transition">
+            <Card key={freelancer._id || freelancer.id || Math.random()} className="hover:shadow-lg transition">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Avatar className="w-12 h-12">
-                      <AvatarImage src={freelancer.avatar} />
+                      <AvatarImage src={freelancer.avatar || freelancer.profilePicture} />
                       <AvatarFallback className="bg-primary/20 text-primary">
-                        {freelancer.username?.charAt(0).toUpperCase() || 'F'}
+                        {freelancer.username?.charAt(0).toUpperCase() || freelancer.name?.charAt(0).toUpperCase() || 'F'}
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">{freelancer.username}</h3>
+                      <h3 className="font-semibold">{freelancer.username || freelancer.name || 'Unknown Freelancer'}</h3>
                       <p className="text-sm text-muted-foreground">{profile.title || 'Freelancer'}</p>
                     </div>
                   </div>
@@ -170,7 +201,7 @@ const FreelancerDirectory = () => {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground mb-4">
                   <div className="flex items-center gap-1">
                     <DollarSign className="w-4 h-4" />
-                    ${profile.hourlyRate || 0}/hr
+                    ${(profile.hourlyRate || 0)}/hr
                   </div>
                 </div>
 
@@ -188,8 +219,8 @@ const FreelancerDirectory = () => {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button asChild className="flex-1">
-                    <Link to={`/freelancer/${freelancer._id}`}>View Profile</Link>
+                  <Button asChild className="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white">
+                    <Link to={`/freelancer-profile/${freelancer._id || freelancer.id}`}>View Profile</Link>
                   </Button>
                   {canInvite && (
                     <Button variant="outline">
@@ -211,7 +242,9 @@ const FreelancerDirectory = () => {
             </p>
           </div>
         )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

@@ -54,18 +54,38 @@ const updateProfile = asyncHandler(async (req, res) => {
 
     let updatedProfile;
     if (role === UserRolesEnum.CLIENT) {
+        // Try to find and update existing profile
         updatedProfile = await ClientProfile.findOneAndUpdate(
             {user: req.user._id},
             {$set: updateData},
             {new: true}
         );
+        
+        // If no profile exists, create one
+        if (!updatedProfile) {
+            const profileData = {
+                user: req.user._id,
+                ...updateData
+            };
+            updatedProfile = await ClientProfile.create(profileData);
+        }
     }
     else if (role === UserRolesEnum.FREELANCER) {
+        // Try to find and update existing profile
         updatedProfile = await FreelancerProfile.findOneAndUpdate(
             {user: req.user._id},
             {$set: updateData},
             {new: true}
         );
+        
+        // If no profile exists, create one
+        if (!updatedProfile) {
+            const profileData = {
+                user: req.user._id,
+                ...updateData
+            };
+            updatedProfile = await FreelancerProfile.create(profileData);
+        }
     }
 
     if (!updatedProfile) {
@@ -112,18 +132,29 @@ const getAllFreelancers = asyncHandler(async (req, res) => {
 const getPublicProfile = asyncHandler(async (req, res) => {
     const { userId } = req.params;
     
-    const user = await User.findById(userId)
-        .select('username email role clientProfile freelancerProfile')
-        .populate('clientProfile')
-        .populate('freelancerProfile');
-    
-    if (!user) {
-        throw new ApiError(404, "User not found");
+    try {
+        const user = await User.findById(userId)
+            .select('username email role clientProfile freelancerProfile createdAt')
+            .populate({
+                path: 'freelancerProfile',
+                select: 'skills portfolio hourlyRate experience'
+            })
+            .populate({
+                path: 'clientProfile',
+                select: 'companyName about'
+            });
+        
+        if (!user) {
+            throw new ApiError(404, "User not found");
+        }
+        
+        return res.status(200).json(
+            new ApiResponse(200, user, "Public profile fetched successfully")
+        );
+    } catch (error) {
+        console.error("Error fetching public profile:", error);
+        throw new ApiError(500, "Internal server error while fetching profile");
     }
-    
-    return res.status(200).json(
-        new ApiResponse(200, user, "Public profile fetched successfully")
-    );
 });
 
 export { getProfile, updateProfile, getAllFreelancers, getPublicProfile }

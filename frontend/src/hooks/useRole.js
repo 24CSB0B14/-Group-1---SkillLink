@@ -8,14 +8,29 @@ export const useRole = () => {
   const { user } = useAuth();
 
   /**
+   * Extract role from user object regardless of structure
+   * @param {Object} userObj - The user object
+   * @returns {string|null} The user's role or null if not found
+   */
+  const extractRole = (userObj) => {
+    if (!userObj) return null;
+    
+    // Try different possible locations for the role
+    return userObj.role || 
+           userObj.user?.role || 
+           userObj.data?.role || 
+           userObj.userData?.role || 
+           null;
+  };
+
+  /**
    * Check if the current user has a specific role
    * @param {string} role - The role to check for
    * @returns {boolean} True if the user has the specified role, false otherwise
    */
   const hasRole = (role) => {
     if (!user || !role) return false;
-    // Handle different user object structures
-    const userRole = user.role || user.user?.role;
+    const userRole = extractRole(user);
     return userRole === role;
   };
 
@@ -49,8 +64,7 @@ export const useRole = () => {
    */
   const getUserRole = () => {
     if (!user) return null;
-    // Handle different user object structures
-    return user.role || user.user?.role || null;
+    return extractRole(user);
   };
 
   return {

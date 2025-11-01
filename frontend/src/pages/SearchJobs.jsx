@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import jobService from "@/services/job.service";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const SearchJobs = () => {
   const { isFreelancer } = useRole();
@@ -63,8 +65,10 @@ const SearchJobs = () => {
   const canApply = isFreelancer() && user;
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 py-8">
+        <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -227,7 +231,9 @@ const SearchJobs = () => {
             </p>
           </div>
         )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

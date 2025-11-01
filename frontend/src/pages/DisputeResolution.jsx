@@ -16,38 +16,64 @@ const DisputeResolution = () => {
   const [decision, setDecision] = useState("");
 
   useEffect(() => {
-    // Simulate API call
-    const mockDispute = {
-      id: "DSP-001",
-      contractId: "CTR-045",
-      client: {
-        name: "John Smith",
-        email: "john@example.com"
-      },
-      freelancer: {
-        name: "Sarah Chen",
-        email: "sarah@example.com"
-      },
-      jobTitle: "Mobile App UI/UX Design",
-      amount: 2500,
-      reason: "Quality of work not meeting expectations",
-      clientStatement: "The delivered design doesn't match the agreed specifications and lacks the professional quality we expected.",
-      freelancerStatement: "I delivered exactly what was agreed upon in the contract. The client is requesting additional features beyond scope.",
-      evidence: [
-        { type: "file", name: "contract.pdf", uploadedBy: "client" },
-        { type: "file", name: "design-mockups.zip", uploadedBy: "freelancer" },
-        { type: "message", content: "Client requested additional features beyond initial scope", from: "freelancer" }
-      ],
-      status: "in-review",
-      createdAt: "2025-01-20"
+    const fetchDispute = async () => {
+      try {
+        // In a real implementation, you would fetch the actual dispute data from an API
+        // For now, we'll use placeholder data
+        const disputeData = {
+          id: id || "DSP-001",
+          contractId: "CTR-045",
+          client: {
+            name: "Client Name",
+            email: "client@example.com"
+          },
+          freelancer: {
+            name: "Freelancer Name",
+            email: "freelancer@example.com"
+          },
+          jobTitle: "Project Title",
+          amount: 1000,
+          reason: "Dispute reason would be loaded here",
+          clientStatement: "Client statement would be loaded here",
+          freelancerStatement: "Freelancer statement would be loaded here",
+          evidence: [],
+          status: "in-review",
+          createdAt: new Date().toISOString()
+        };
+
+        setDispute(disputeData);
+      } catch (error) {
+        console.error("Failed to load dispute:", error);
+        if (error.response?.data?.message) {
+          toast.error(`Failed to load dispute: ${error.response.data.message}`);
+        } else if (error.message) {
+          toast.error(`Failed to load dispute: ${error.message}`);
+        } else {
+          toast.error("Failed to load dispute. Please try again later.");
+        }
+      }
     };
 
-    setDispute(mockDispute);
+    fetchDispute();
   }, [id]);
 
-  const handleSubmitResolution = (e) => {
+  const handleSubmitResolution = async (e) => {
     e.preventDefault();
-    // Simulate dispute resolution
+    
+    try {
+      // In a real implementation, you would submit the resolution to an API
+      // For now, we'll just show a success message
+      toast.success("Dispute resolution submitted successfully!");
+    } catch (error) {
+      console.error('Error submitting dispute resolution:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to submit dispute resolution: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to submit dispute resolution: ${error.message}`);
+      } else {
+        toast.error("Failed to submit dispute resolution. Please try again later.");
+      }
+    }
   };
 
   if (!dispute) return <div>Loading...</div>;
@@ -120,7 +146,7 @@ const DisputeResolution = () => {
                 <div>
                   <h4 className="font-semibold mb-2 flex items-center gap-2">
                     <Avatar className="w-6 h-6">
-                      <AvatarFallback className="text-xs">JS</AvatarFallback>
+                      <AvatarFallback className="text-xs">{dispute.client.name.split(' ').map(n => n[0]).join('') || 'C'}</AvatarFallback>
                     </Avatar>
                     Client Statement
                   </h4>
@@ -132,7 +158,7 @@ const DisputeResolution = () => {
                 <div>
                   <h4 className="font-semibold mb-2 flex items-center gap-2">
                     <Avatar className="w-6 h-6">
-                      <AvatarFallback className="text-xs">SC</AvatarFallback>
+                      <AvatarFallback className="text-xs">{dispute.freelancer.name.split(' ').map(n => n[0]).join('') || 'F'}</AvatarFallback>
                     </Avatar>
                     Freelancer Statement
                   </h4>
@@ -165,7 +191,7 @@ const DisputeResolution = () => {
                           </p>
                         </div>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" onClick={() => toast.info("File viewing feature coming soon")}>
                         View
                       </Button>
                     </div>

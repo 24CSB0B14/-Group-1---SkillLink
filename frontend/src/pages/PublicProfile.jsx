@@ -1,6 +1,5 @@
-// pages/PublicProfile.jsx
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -11,48 +10,105 @@ import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import profileService from "@/services/profile.service";
+import messageService from "@/services/message.service";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
+import Loading from "@/components/Loading";
 
 const PublicProfile = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { isClient } = useRole();
   const { user } = useAuth();
   const [freelancer, setFreelancer] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProfile();
+    try {
+      fetchProfile();
+    } catch (error) {
+      console.error('Error initializing profile:', error);
+      toast.error("Failed to initialize profile");
+    }
   }, [id]);
 
   const fetchProfile = async () => {
     try {
       setLoading(true);
       const response = await profileService.getPublicProfile(id);
+      // Handle different response formats
       const data = response.data || response;
-      setFreelancer(data);
+      if (data) {
+        setFreelancer(data);
+      } else {
+        throw new Error("Invalid response format");
+      }
     } catch (error) {
-      toast.error("Failed to load profile");
+      console.error('Error fetching profile:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to load profile: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to load profile: ${error.message}`);
+      } else {
+        toast.error("Failed to load profile. Please try again later.");
+      }
+      // Navigate back if profile not found
+      if (error.response?.status === 404) {
+        setTimeout(() => {
+          navigate(-1);
+        }, 2000);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  const handleStartChat = async () => {
+    try {
+      const response = await messageService.startConversation(freelancer.username);
+      navigate(`/chat/${response.data._id}`);
+    } catch (error) {
+      console.error('Error starting chat:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to start conversation: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to start conversation: ${error.message}`);
+      } else {
+        toast.error("Failed to start conversation. Please try again later.");
+      }
+    }
+  };
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
-  if (!freelancer) return <div className="min-h-screen bg-background flex items-center justify-center">Profile not found</div>;
+  // Check if freelancer data is available
+  if (loading) return <Loading />;
+  if (!freelancer) return (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+      <Header />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Profile not found</h2>
+          <p className="text-muted-foreground">The freelancer profile you're looking for doesn't exist.</p>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
 
-  const profile = freelancer.freelancerProfile || {};
+  // Safely extract profile data
+  const profile = freelancer.freelancerProfile || freelancer.profile || {};
   const canContact = isClient() && user;
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50">
+      <Header />
+      <div className="py-8">
+        <div className="container mx-auto px-4 max-w-6xl">
         {/* Header Section */}
         <Card className="mb-6">
           <CardContent className="p-8">
             <div className="flex flex-col md:flex-row gap-6 items-start">
               <Avatar className="w-24 h-24">
-                <AvatarImage src={freelancer.avatar} />
+                <AvatarImage src={freelancer.avatar || freelancer.profilePicture || ''} />
                 <AvatarFallback className="text-2xl bg-primary/20 text-primary">
                   {freelancer.username?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
@@ -61,12 +117,15 @@ const PublicProfile = () => {
               <div className="flex-1">
                 <div className="flex flex-col md:flex-row md:items-center justify-between mb-4">
                   <div>
-                    <h1 className="text-3xl font-bold">{freelancer.username}</h1>
-                    <p className="text-xl text-muted-foreground mt-1">{profile.title || 'Freelancer'}</p>
+                    <h1 className="text-3xl font-bold">{freelancer.username || 'Unknown User'}</h1>
+                    <p className="text-xl text-muted-foreground mt-1">{profile.title || profile.jobTitle || 'Freelancer'}</p>
                   </div>
                   {canContact && (
                     <div className="flex gap-2 mt-4 md:mt-0">
-                      <Button>
+                      <Button
+                        onClick={handleStartChat}
+                        className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white"
+                      >
                         <MessageCircle className="w-4 h-4 mr-2" />
                         Contact
                       </Button>
@@ -102,7 +161,9 @@ const PublicProfile = () => {
                   <div className="flex items-center gap-2">
                     <Calendar className="w-4 h-4 text-muted-foreground" />
                     <div>
-                      <div className="font-semibold">{new Date(freelancer.createdAt).getFullYear()}</div>
+                      <div className="font-semibold">
+                        {freelancer.createdAt ? new Date(freelancer.createdAt).getFullYear() : 'N/A'}
+                      </div>
                       <div className="text-sm text-muted-foreground">Member since</div>
                     </div>
                   </div>
@@ -111,7 +172,7 @@ const PublicProfile = () => {
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <div className="flex items-center gap-1">
                     <MapPin className="w-4 h-4" />
-                    {profile.location || 'Remote'}
+                    {profile.location || profile.address || 'Remote'}
                   </div>
                 </div>
               </div>
@@ -136,7 +197,7 @@ const PublicProfile = () => {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground leading-relaxed">
-                  {profile.bio || 'Professional freelancer ready to work on your next project.'}
+                  {profile.bio || profile.description || profile.about || 'Professional freelancer ready to work on your next project.'}
                 </p>
               </CardContent>
             </Card>
@@ -147,12 +208,12 @@ const PublicProfile = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {(profile.skills || []).map((skill, index) => (
+                  {(profile.skills || profile.expertise || []).map((skill, index) => (
                     <Badge key={index} variant="secondary" className="text-sm py-1 px-3">
                       {skill}
                     </Badge>
                   ))}
-                  {(!profile.skills || profile.skills.length === 0) && (
+                  {(!profile.skills || !profile.skills.length) && (
                     <p className="text-muted-foreground">No skills listed</p>
                   )}
                 </div>
@@ -163,24 +224,31 @@ const PublicProfile = () => {
           {/* Portfolio Tab */}
           <TabsContent value="portfolio" className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
-              {freelancer.portfolio.map((project) => (
-                <Card key={project.id} className="overflow-hidden">
-                  <div className="h-48 bg-muted flex items-center justify-center">
-                    <Briefcase className="w-12 h-12 text-muted-foreground opacity-50" />
-                  </div>
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold text-lg mb-2">{project.title}</h3>
-                    <p className="text-muted-foreground mb-4">{project.description}</p>
-                    <div className="flex flex-wrap gap-1">
-                      {project.tags.map((tag, index) => (
-                        <Badge key={index} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
+              {((profile.portfolio || profile.workSamples || [])?.length > 0) ? (
+                (profile.portfolio || profile.workSamples || []).map((project, index) => (
+                  <Card key={index} className="overflow-hidden">
+                    <div className="h-48 bg-muted flex items-center justify-center">
+                      <Briefcase className="w-12 h-12 text-muted-foreground opacity-50" />
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    <CardContent className="p-6">
+                      <h3 className="font-semibold text-lg mb-2">{project.title || project.name || 'Project'}</h3>
+                      <p className="text-muted-foreground mb-4">{project.description || project.details || 'No description'}</p>
+                      <div className="flex flex-wrap gap-1">
+                        {(project.tags || project.skills || []).map((tag, tagIndex) => (
+                          <Badge key={tagIndex} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-12">
+                  <Briefcase className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No portfolio items yet</p>
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -191,19 +259,25 @@ const PublicProfile = () => {
                 <CardTitle>Work Experience</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {freelancer.workHistory.map((job, index) => (
-                  <div key={index} className="flex gap-4 pb-6 border-b last:border-b-0 last:pb-0 last:mb-0">
-                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                      <Briefcase className="w-6 h-6 text-primary" />
+                {((profile.experience || profile.workHistory || [])?.length > 0) ? (
+                  (profile.experience || profile.workHistory || []).map((job, index) => (
+                    <div key={index} className="flex gap-4 pb-6 border-b last:border-b-0 last:pb-0 last:mb-0">
+                      <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                        <Briefcase className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-lg">{job.position || job.title || job.role || 'Position'}</h3>
+                        <p className="text-muted-foreground">{job.company || job.organization || 'Company'}</p>
+                        <p className="text-sm text-muted-foreground mb-2">{job.period || job.duration || job.date || 'Duration'}</p>
+                        <p className="text-muted-foreground">{job.description || job.details || 'No description'}</p>
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{job.position}</h3>
-                      <p className="text-muted-foreground">{job.company}</p>
-                      <p className="text-sm text-muted-foreground mb-2">{job.period}</p>
-                      <p className="text-muted-foreground">{job.description}</p>
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8">
+                    <p className="text-muted-foreground">No work experience listed</p>
                   </div>
-                ))}
+                )}
               </CardContent>
             </Card>
           </TabsContent>
@@ -211,28 +285,37 @@ const PublicProfile = () => {
           {/* Reviews Tab */}
           <TabsContent value="reviews" className="space-y-6">
             <div className="space-y-4">
-              {freelancer.reviews.map((review) => (
-                <Card key={review.id}>
-                  <CardContent className="p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h4 className="font-semibold">{review.client}</h4>
-                        <p className="text-sm text-muted-foreground">{review.project}</p>
+              {((profile.reviews || profile.feedback || [])?.length > 0) ? (
+                (profile.reviews || profile.feedback || []).map((review, index) => (
+                  <Card key={index}>
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <h4 className="font-semibold">{review.client || review.reviewer || 'Client'}</h4>
+                          <p className="text-sm text-muted-foreground">{review.project || review.work || 'Project'}</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                          <span>{review.rating || 5}.0</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span>{review.rating}.0</span>
-                      </div>
-                    </div>
-                    <p className="text-muted-foreground mb-2">{review.comment}</p>
-                    <p className="text-sm text-muted-foreground">Posted on {review.date}</p>
-                  </CardContent>
-                </Card>
-              ))}
+                      <p className="text-muted-foreground mb-2">{review.comment || review.feedback || 'No comment'}</p>
+                      <p className="text-sm text-muted-foreground">Posted on {review.date || review.createdAt || 'N/A'}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              ) : (
+                <div className="text-center py-12">
+                  <Star className="w-16 h-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+                  <p className="text-muted-foreground">No reviews yet</p>
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>
       </div>
+      </div>
+      <Footer />
     </div>
   );
 };

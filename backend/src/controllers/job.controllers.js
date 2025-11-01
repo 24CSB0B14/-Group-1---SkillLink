@@ -110,23 +110,37 @@ const getAllJobs = asyncHandler(async (req, res) => {
 const getJobById = asyncHandler(async (req, res) => {
     const { jobId } = req.params;
 
-    const job = await Job.findById(jobId)
-        .populate("client", "username email")
-        .populate("bids");
+    try {
+        const job = await Job.findById(jobId)
+            .populate("client", "username email")
+            .populate({
+                path: "bids",
+                populate: {
+                    path: "freelancer",
+                    select: "username email"
+                }
+            });
 
-    if (!job) {
-        throw new ApiError(404, "Job not found");
+        if (!job) {
+            throw new ApiError(404, "Job not found");
+        }
+
+        return res
+            .status(200)
+            .json(
+            new ApiResponse(
+                200,
+                job,
+                "Job fetched successfully"
+            )
+        );
+    } catch (error) {
+        console.error("Error fetching job:", error);
+        if (error.name === 'CastError') {
+            throw new ApiError(400, "Invalid job ID format");
+        }
+        throw error;
     }
-
-    return res
-        .status(200)
-        .json(
-        new ApiResponse(
-            200,
-            job,
-            "Job fetched successfully"
-        )
-  );
 });
 
 const updateJob = asyncHandler(async (req, res) => {
@@ -203,7 +217,7 @@ const deleteJob = asyncHandler(async (req, res) => {
         new ApiResponse(
             200,
             {},
-            "Job deleted successfully"
+            "Job and all related bids and notifications deleted successfully"
         )
   );
 });

@@ -10,7 +10,8 @@ import {
     forgotPasswordRequest,
     resetForgotPassword,
     changeCurrentPassword,
-    updateUserAvatar
+    updateUserAvatar,
+    deleteUserAccount
 } from "../controllers/auth.controllers.js";
 import { validate } from "../middlewares/validator.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -82,6 +83,10 @@ router.route("/change-password").post(verifyJWT, userChangeCurrentPasswordValida
 //Sends verification email again
 router.route("/resend-email-verification").post(verifyJWT, resendEmailVerification)
 
+//Update user avatar
 router.route("/update-avatar").post(verifyJWT, upload.single("avatar"), updateUserAvatar);
+
+//Delete user account
+router.route("/delete-account").delete(verifyJWT, deleteUserAccount);
 
 export default router

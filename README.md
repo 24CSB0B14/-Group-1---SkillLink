@@ -33,12 +33,24 @@ SkillLink_OOPs_Project/
 
 ### Installation
 
-1. Clone the repository
+#### Option 1: Install All Dependencies (Recommended)
+```bash
+npm run install:all
+```
+
+#### Option 2: Install Separately
+
+1. Install root dependencies:
+   ```bash
+   npm install
+   ```
+
 2. Install backend dependencies:
    ```bash
    cd backend
    npm install
    ```
+
 3. Install frontend dependencies:
    ```bash
    cd frontend
@@ -48,21 +60,28 @@ SkillLink_OOPs_Project/
 ### Environment Setup
 
 #### Backend (.env)
-Create a `.env` file in the `backend/` directory:
-```env
-PORT=3000
-CORS_ORIGIN=http://localhost:8080,http://localhost:8081
-MONGODB_URI=mongodb://localhost:27017/skilllink
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRES_IN=7d
-# Add other required environment variables
+Copy the example file and configure:
+```bash
+cd backend
+cp .env.example .env
 ```
 
+Update the following values in `backend/.env`:
+- `MONGODB_URI` - Your MongoDB connection string
+- `JWT_SECRET` - Strong random secret for JWT tokens
+- `ACCESS_TOKEN_SECRET` - Strong random secret for access tokens
+- `REFRESH_TOKEN_SECRET` - Strong random secret for refresh tokens
+- `CLOUDINARY_*` - Your Cloudinary credentials (for file uploads)
+- `MAILTRAP_*` - Your Mailtrap credentials (for email in development)
+
 #### Frontend (.env)
-Create a `.env` file in the `frontend/` directory:
-```env
-VITE_API_BASE_URL=http://localhost:3000/api/v1
+Copy the example file:
+```bash
+cd frontend
+cp .env.example .env
 ```
+
+The default configuration should work for local development.
 
 ### Running the Application
 
@@ -86,7 +105,7 @@ Double-click the `start-dev.bat` file to start both servers simultaneously.
 
 ### Accessing the Application
 
-- Frontend: http://localhost:8080 or http://localhost:8081 (if 8080 is in use)
+- Frontend: http://localhost:8082
 - Backend API: http://localhost:3000
 - Backend Health Check: http://localhost:3000/api/v1/healthCheck
 
@@ -112,12 +131,33 @@ Double-click the `start-dev.bat` file to start both servers simultaneously.
 
 ## API Services
 
-The frontend communicates with the backend through a service layer:
+The frontend communicates with the backend through a well-structured service layer:
 
-- `auth.service.js` - Authentication APIs
-- `profile.service.js` - Profile management APIs
-- `job.service.js` - Job-related APIs
-- `bid.service.js` - Bid-related APIs
+- `auth.service.js` - Authentication and user management
+- `profile.service.js` - User profile operations
+- `job.service.js` - Job posting and management
+- `bid.service.js` - Bidding system
+- `contract.service.js` - Contract management
+- `escrow.service.js` - Escrow and payment handling
+- `dispute.service.js` - Dispute resolution
+- `review.service.js` - Rating and review system
+- `notification.service.js` - User notifications
+- `admin.service.js` - Administrative functions
+
+## Recent Improvements
+
+This project has been optimized with the following improvements:
+
+✅ **Fixed port configuration discrepancies** - All configuration files now consistently use port 8082
+✅ **Fixed CORS settings** - Backend correctly accepts requests from port 8082
+✅ **Removed unused dependencies** - Cleaned up unnecessary packages (concurrently in frontend, lovable-tagger)
+✅ **Removed unused files** - Deleted Index.jsx and bun.lockb
+✅ **Added environment examples** - Created .env.example files for easy setup
+✅ **Added .gitignore files** - Proper git ignore configuration for all directories
+✅ **Added Prettier configuration** - Consistent code formatting across the project
+✅ **Cleaned up commented code** - Removed unused/commented code from Landing page
+✅ **Fixed backend error logging** - Corrected console.error template literal
+✅ **Updated documentation** - Removed Lovable-specific references, added accurate setup instructions
 
 ## Development
 

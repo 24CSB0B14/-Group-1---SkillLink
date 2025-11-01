@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import jobService from "@/services/job.service";
 import { useRole } from "@/hooks/useRole";
 import { useAuth } from "@/context/AuthContext";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +59,7 @@ const MyJobs = () => {
       const jobsData = response.data || response;
       setJobs(jobsData);
     } catch (error) {
+      console.error('Error fetching jobs:', error);
       if (error.response?.data?.message) {
         toast.error(`Failed to load your jobs: ${error.response.data.message}`);
       } else if (error.message) {
@@ -82,7 +85,14 @@ const MyJobs = () => {
         // Refresh the job list
         await fetchMyJobs();
       } catch (error) {
-        toast.error("Failed to delete job");
+        console.error('Error deleting job:', error);
+        if (error.response?.data?.message) {
+          toast.error(`Failed to delete job: ${error.response.data.message}`);
+        } else if (error.message) {
+          toast.error(`Failed to delete job: ${error.message}`);
+        } else {
+          toast.error("Failed to delete job. Please try again later.");
+        }
       } finally {
         setLoading(false);
       }
@@ -113,7 +123,14 @@ const MyJobs = () => {
       setDisputeReason("");
       setSelectedJob(null);
     } catch (error) {
-      toast.error("Failed to raise dispute");
+      console.error('Error submitting dispute:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to raise dispute: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to raise dispute: ${error.message}`);
+      } else {
+        toast.error("Failed to raise dispute. Please try again later.");
+      }
     } finally {
       setDisputeLoading(false);
     }
@@ -122,12 +139,16 @@ const MyJobs = () => {
   // Show loading state while determining user role
   if (!user) {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center py-12">
-            <p>Loading user information...</p>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 py-8">
+          <div className="container mx-auto px-4 max-w-7xl">
+            <div className="text-center py-12">
+              <p>Loading user information...</p>
+            </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -135,25 +156,31 @@ const MyJobs = () => {
   // Redirect if user is not a client
   if (user.role !== "client") {
     return (
-      <div className="min-h-screen bg-background py-8">
-        <div className="container mx-auto px-4 max-w-7xl">
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-            <p className="text-muted-foreground mb-6">
-              Only clients can view their own jobs.
-            </p>
-            <Button asChild>
-              <Link to="/search-jobs">Browse Jobs</Link>
-            </Button>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 py-8">
+          <div className="container mx-auto px-4 max-w-7xl">
+            <div className="text-center py-12">
+              <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+              <p className="text-muted-foreground mb-6">
+                Only clients can view their own jobs.
+              </p>
+              <Button asChild>
+                <Link to="/search-jobs">Browse Jobs</Link>
+              </Button>
+            </div>
           </div>
         </div>
+        <Footer />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4 max-w-7xl">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 py-8">
+        <div className="container mx-auto px-4 max-w-7xl">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
           <div>
@@ -257,7 +284,7 @@ const MyJobs = () => {
                     </Button>
                     <Button variant="outline" onClick={() => handleDeleteJob(job._id)} disabled={loading}>
                       <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
+                      {loading ? "Deleting..." : "Delete"}
                     </Button>
                     <Button variant="outline" onClick={() => handleRaiseDispute(job)}>
                       <Shield className="w-4 h-4 mr-2" />
@@ -320,6 +347,8 @@ const MyJobs = () => {
           </div>
         </DialogContent>
       </Dialog>
+      </div>
+      <Footer />
     </div>
   );
 };

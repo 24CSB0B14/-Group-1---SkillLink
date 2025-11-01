@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import authService from "@/services/auth.service";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -38,7 +40,39 @@ const ForgotPassword = () => {
 
   if (submitted) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary-light via-background to-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
+                  <span className="text-primary-foreground font-bold text-xl">S</span>
+                </div>
+                <CardTitle className="text-2xl text-primary">SkillLink</CardTitle>
+              </div>
+              <CardTitle className="text-2xl">Check Your Email</CardTitle>
+            </CardHeader>
+            <CardContent className="text-center">
+              <p className="mb-6">
+                We've sent password reset instructions to <strong>{email}</strong>. 
+                Please check your inbox and follow the instructions to reset your password.
+              </p>
+              <Button onClick={() => navigate("/login")} className="w-full">
+                Back to Login
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
             <div className="flex items-center justify-center gap-2 mb-4">
@@ -47,63 +81,39 @@ const ForgotPassword = () => {
               </div>
               <CardTitle className="text-2xl text-primary">SkillLink</CardTitle>
             </div>
-            <CardTitle className="text-2xl">Check Your Email</CardTitle>
+            <CardTitle className="text-2xl">Reset Your Password</CardTitle>
           </CardHeader>
-          <CardContent className="text-center">
-            <p className="mb-6">
-              We've sent password reset instructions to <strong>{email}</strong>. 
-              Please check your inbox and follow the instructions to reset your password.
+          <CardContent>
+            <p className="text-muted-foreground mb-6">
+              Enter your email address and we'll send you instructions to reset your password.
             </p>
-            <Button onClick={() => navigate("/login")} className="w-full">
-              Back to Login
-            </Button>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? "Sending..." : "Send Reset Instructions"}
+              </Button>
+
+              <div className="text-center">
+                <Link to="/login" className="text-primary hover:underline">
+                  Back to Login
+                </Link>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-light via-background to-background flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xl">S</span>
-            </div>
-            <CardTitle className="text-2xl text-primary">SkillLink</CardTitle>
-          </div>
-          <CardTitle className="text-2xl">Reset Your Password</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground mb-6">
-            Enter your email address and we'll send you instructions to reset your password.
-          </p>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-
-            <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? "Sending..." : "Send Reset Instructions"}
-            </Button>
-
-            <div className="text-center">
-              <Link to="/login" className="text-primary hover:underline">
-                Back to Login
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <Footer />
     </div>
   );
 };

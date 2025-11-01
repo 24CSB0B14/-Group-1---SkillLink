@@ -1,5 +1,6 @@
 // pages/Settings.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,41 +9,152 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Save, Bell, Shield, User, CreditCard, Globe } from "lucide-react";
+import { Save, Bell, Shield, User, CreditCard, Globe, ArrowLeft, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import authService from "@/services/auth.service";
+import profileService from "@/services/profile.service";
 
 const Settings = () => {
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const [activeTab, setActiveTab] = useState("profile");
-  const [profile, setProfile] = useState({
-    name: "John Smith",
-    email: "john@example.com",
-    phone: "+1 (555) 123-4567",
-    bio: "Product manager with 5+ years of experience in tech startups.",
-    company: "Tech Innovations Inc.",
-    website: "https://techinnovations.com"
+  
+  // Load initial state from localStorage or defaults
+  const [profile, setProfile] = useState(() => {
+    const savedProfile = localStorage.getItem('settings_profile');
+    return savedProfile ? JSON.parse(savedProfile) : {
+      name: user?.username || "",
+      email: user?.email || "",
+      phone: "",
+      bio: "",
+      company: "",
+      website: ""
+    };
   });
 
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    bidAlerts: true,
-    messageAlerts: true,
-    paymentAlerts: true,
-    marketingEmails: false
+  const [notifications, setNotifications] = useState(() => {
+    const savedNotifications = localStorage.getItem('settings_notifications');
+    return savedNotifications ? JSON.parse(savedNotifications) : {
+      emailNotifications: true,
+      bidAlerts: true,
+      messageAlerts: true,
+      paymentAlerts: true,
+      marketingEmails: false
+    };
   });
 
-  const [security, setSecurity] = useState({
-    twoFactorAuth: false,
-    loginAlerts: true,
-    sessionTimeout: 30
+  const [security, setSecurity] = useState(() => {
+    const savedSecurity = localStorage.getItem('settings_security');
+    return savedSecurity ? JSON.parse(savedSecurity) : {
+      twoFactorAuth: false,
+      loginAlerts: true,
+      sessionTimeout: 30
+    };
   });
 
-  const handleSave = (section) => {
-    // Simulate saving settings
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('settings_profile', JSON.stringify(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem('settings_notifications', JSON.stringify(notifications));
+  }, [notifications]);
+
+  useEffect(() => {
+    localStorage.setItem('settings_security', JSON.stringify(security));
+  }, [security]);
+
+  const handleSaveProfile = async () => {
+    try {
+      // Save profile data to backend
+      const profileData = {
+        bio: profile.bio,
+        phone: profile.phone,
+        company: profile.company,
+        website: profile.website
+      };
+      
+      const response = await profileService.updateUserProfile(profileData);
+      toast.success("Profile settings saved successfully!");
+      
+      // Also save to localStorage for immediate persistence
+      localStorage.setItem('settings_profile', JSON.stringify(profile));
+    } catch (error) {
+      console.error('Error saving profile settings:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to save profile settings: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to save profile settings: ${error.message}`);
+      } else {
+        toast.error("Failed to save profile settings. Please try again later.");
+      }
+    }
+  };
+
+  const handleSaveNotifications = async () => {
+    try {
+      // Save to localStorage
+      localStorage.setItem('settings_notifications', JSON.stringify(notifications));
+      toast.success("Notification settings saved successfully!");
+    } catch (error) {
+      console.error('Error saving notification settings:', error);
+      toast.error("Failed to save notification settings. Please try again later.");
+    }
+  };
+
+  const handleSaveSecurity = async () => {
+    try {
+      // Save to localStorage
+      localStorage.setItem('settings_security', JSON.stringify(security));
+      toast.success("Security settings saved successfully!");
+    } catch (error) {
+      console.error('Error saving security settings:', error);
+      toast.error("Failed to save security settings. Please try again later.");
+    }
+  };
+
+  const handleSave = async (section) => {
+    switch (section) {
+      case "profile":
+        await handleSaveProfile();
+        break;
+      case "notifications":
+        await handleSaveNotifications();
+        break;
+      case "security":
+        await handleSaveSecurity();
+        break;
+      default:
+        toast.success("Settings saved successfully!");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.")) {
+      return;
+    }
+
+    try {
+      // Use the authService to delete the account
+      await authService.deleteAccount();
+      toast.success("Account deleted successfully");
+      await logout();
+      navigate("/");
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error(`Failed to delete account: ${error.message || 'Unknown error'}`);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="flex items-center gap-3 mb-8">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mr-2">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
           <User className="w-8 h-8 text-primary" />
           <div>
             <h1 className="text-3xl font-bold">Settings</h1>
@@ -133,7 +245,7 @@ const Settings = () => {
                 </div>
 
                 <div className="flex justify-end">
-                  <Button onClick={() => handleSave("profile")}>
+                  <Button onClick={handleSaveProfile}>
                     <Save className="w-4 h-4 mr-2" />
                     Save Changes
                   </Button>
@@ -164,13 +276,20 @@ const Settings = () => {
                     </div>
                     <Switch
                       checked={value}
-                      onCheckedChange={(checked) => setNotifications(prev => ({ ...prev, [key]: checked }))}
+                      onCheckedChange={(checked) => {
+                        try {
+                          setNotifications(prev => ({ ...prev, [key]: checked }));
+                        } catch (error) {
+                          console.error('Error updating notification setting:', error);
+                          toast.error("Failed to update notification setting");
+                        }
+                      }}
                     />
                   </div>
                 ))}
 
                 <div className="flex justify-end pt-4">
-                  <Button onClick={() => handleSave("notifications")}>
+                  <Button onClick={handleSaveNotifications}>
                     <Save className="w-4 h-4 mr-2" />
                     Save Preferences
                   </Button>
@@ -196,52 +315,67 @@ const Settings = () => {
                       Add an extra layer of security to your account
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <Badge variant={security.twoFactorAuth ? "success" : "secondary"}>
-                      {security.twoFactorAuth ? "Enabled" : "Disabled"}
-                    </Badge>
-                    <Switch
-                      checked={security.twoFactorAuth}
-                      onCheckedChange={(checked) => setSecurity(prev => ({ ...prev, twoFactorAuth: checked }))}
-                    />
-                  </div>
+                  <Switch
+                    checked={security.twoFactorAuth}
+                    onCheckedChange={(checked) => {
+                      try {
+                        setSecurity(prev => ({ ...prev, twoFactorAuth: checked }));
+                      } catch (error) {
+                        console.error('Error updating security setting:', error);
+                        toast.error("Failed to update security setting");
+                      }
+                    }}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="font-medium">Login Alerts</div>
                     <div className="text-sm text-muted-foreground">
-                      Get notified of new sign-ins from unknown devices
+                      Get notified when someone logs into your account
                     </div>
                   </div>
                   <Switch
                     checked={security.loginAlerts}
-                    onCheckedChange={(checked) => setSecurity(prev => ({ ...prev, loginAlerts: checked }))}
+                    onCheckedChange={(checked) => {
+                      try {
+                        setSecurity(prev => ({ ...prev, loginAlerts: checked }));
+                      } catch (error) {
+                        console.error('Error updating security setting:', error);
+                        toast.error("Failed to update security setting");
+                      }
+                    }}
                   />
                 </div>
 
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Session Timeout</label>
-                  <Select
-                    value={security.sessionTimeout.toString()}
-                    onValueChange={(value) => setSecurity(prev => ({ ...prev, sessionTimeout: parseInt(value) }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="15">15 minutes</SelectItem>
-                      <SelectItem value="30">30 minutes</SelectItem>
-                      <SelectItem value="60">1 hour</SelectItem>
-                      <SelectItem value="120">2 hours</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
                 <div className="flex justify-end pt-4">
-                  <Button onClick={() => handleSave("security")}>
+                  <Button onClick={handleSaveSecurity}>
                     <Save className="w-4 h-4 mr-2" />
-                    Save Security Settings
+                    Save Preferences
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Delete Account Section */}
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive">Delete Account</CardTitle>
+                <CardDescription>
+                  Permanently delete your account and all associated data
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-medium">Delete Your Account</div>
+                    <div className="text-sm text-muted-foreground">
+                      This action cannot be undone. All your data will be permanently removed.
+                    </div>
+                  </div>
+                  <Button variant="destructive" onClick={handleDeleteAccount}>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Account
                   </Button>
                 </div>
               </CardContent>
@@ -261,9 +395,9 @@ const Settings = () => {
                 <div className="p-4 border rounded-lg bg-muted/30">
                   <div className="flex items-center justify-between mb-2">
                     <div className="font-medium">Current Balance</div>
-                    <Badge variant="outline">Client Account</Badge>
+                    <Badge variant="outline">Account</Badge>
                   </div>
-                  <div className="text-2xl font-bold">$8,450.75</div>
+                  <div className="text-2xl font-bold">$0.00</div>
                   <div className="flex gap-2 mt-3">
                     <Button size="sm">Add Funds</Button>
                     <Button variant="outline" size="sm">Withdraw</Button>

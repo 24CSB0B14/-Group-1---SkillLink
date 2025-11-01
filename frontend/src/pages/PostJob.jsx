@@ -11,6 +11,8 @@ import { X, Plus, DollarSign, Calendar, Clock } from "lucide-react";
 import { toast } from "sonner";
 import jobService from "@/services/job.service";
 import { useAuth } from "@/context/AuthContext";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const PostJob = () => {
   const navigate = useNavigate();
@@ -31,16 +33,20 @@ const PostJob = () => {
   // Ensure we have user data
   if (!user) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
-          <p className="text-muted-foreground mb-6">
-            You must be logged in as a client to post jobs.
-          </p>
-          <Button onClick={() => navigate("/login")}>
-            Go to Login
-          </Button>
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+            <p className="text-muted-foreground mb-6">
+              You must be logged in as a client to post jobs.
+            </p>
+            <Button onClick={() => navigate("/login")}>
+              Go to Login
+            </Button>
+          </div>
         </div>
+        <Footer />
       </div>
     );
   }
@@ -120,8 +126,10 @@ const PostJob = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background py-8">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 py-8">
+        <div className="container mx-auto px-4 max-w-4xl">
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl flex items-center gap-2">
@@ -266,7 +274,9 @@ const PostJob = () => {
             </form>
           </CardContent>
         </Card>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 };

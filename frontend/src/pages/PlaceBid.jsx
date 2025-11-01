@@ -65,21 +65,20 @@ const PlaceBid = () => {
       const jobData = response.data || response;
       setJob(jobData);
     } catch (error) {
-      toast.error("Failed to load job details");
-      // Fallback to mock data if API fails
-      setJob(mockJob);
+      console.error('Error fetching job details:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to load job details: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to load job details: ${error.message}`);
+      } else {
+        toast.error("Failed to load job details. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const mockJob = {
-    _id: "SKL-001",
-    title: "Senior UI/UX Designer for Mobile App",
-    budget: 5000,
-    budgetType: "fixed",
-    skills: ["Figma", "UI/UX Design", "Mobile Design"]
-  };
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,7 +92,14 @@ const PlaceBid = () => {
       toast.success("Bid submitted successfully!");
       navigate("/job-details/" + id);
     } catch (error) {
-      toast.error(error.message || "Failed to submit bid. Please try again.");
+      console.error('Error submitting bid:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to submit bid: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to submit bid: ${error.message}`);
+      } else {
+        toast.error("Failed to submit bid. Please try again later.");
+      }
     }
   };
 

@@ -16,7 +16,7 @@ app.use(cookieParser());
 
 //basic setup of cors
 app.use(cors({
-    origin: process.env.CORS_ORIGIN?.split(',') || ["http://localhost:8082", "http://localhost:8080", "http://localhost:8081"],
+    origin: process.env.CORS_ORIGIN?.split(',') || ["http://localhost:8082"],
     credentials: true, //allows cookies, authorization headers etc
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], //allows these req from frontend
     allowedHeaders: ["Content-Type", "Authorization"], //List of headers allowed in cross origin requests

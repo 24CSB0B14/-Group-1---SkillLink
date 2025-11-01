@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Search, User, Bell, DollarSign, AlertTriangle } from "lucide-react";
 import profileService from "@/services/profile.service";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 import {
   Dialog,
   DialogContent,
@@ -75,25 +77,10 @@ const FreelancerDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        {/* Header Skeleton */}
-        <header className="bg-header border-b border-accent/20">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Skeleton className="w-8 h-8 rounded-lg" />
-                <Skeleton className="h-6 w-24" />
-              </div>
-              <div className="flex items-center gap-4">
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-10 w-20" />
-              </div>
-            </div>
-          </div>
-        </header>
-
+      <div className="min-h-screen bg-background flex flex-col">
+        <Header />
         {/* Main Content Skeleton */}
-        <main className="container mx-auto px-4 py-8">
+        <main className="container mx-auto px-4 py-8 flex-1">
           <div className="grid gap-6">
             <Card>
               <CardHeader>
@@ -121,6 +108,7 @@ const FreelancerDashboard = () => {
             </Card>
           </div>
         </main>
+        <Footer />
       </div>
     );
   }
@@ -142,29 +130,11 @@ const FreelancerDashboard = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="bg-header border-b border-accent/20">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-lg">S</span>
-              </div>
-              <h1 className="text-xl font-bold text-header-foreground">SkillLink</h1>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-header-foreground">Welcome, {getWelcomeMessage()}</span>
-              <Button variant="outline" onClick={handleLogout}>
-                Logout
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 flex-1">
         <div className="grid gap-6">
           <Card>
             <CardHeader>
@@ -249,6 +219,7 @@ const FreelancerDashboard = () => {
           </Card>
         </div>
       </main>
+      <Footer />
     </div>
   );
 };

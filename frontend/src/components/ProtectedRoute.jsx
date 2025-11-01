@@ -12,22 +12,17 @@ import { Skeleton } from "@/components/ui/skeleton";
  * @returns {React.ReactNode} Protected route or redirect
  */
 const ProtectedRoute = ({ children, allowedRoles = null, requireAuth = true }) => {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const { hasRole, getUserRole } = useRole();
   const location = useLocation();
 
   // Show loading state while checking auth status
   if (loading) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <Skeleton className="h-16 w-full" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-64 w-full" />
-          </div>
-          <Skeleton className="h-96 w-full" />
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-purple-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     );
@@ -51,13 +46,28 @@ const ProtectedRoute = ({ children, allowedRoles = null, requireAuth = true }) =
       // Redirect to appropriate dashboard based on user role
       // But prevent redirect loops by checking current path
       const userRole = getUserRole();
-      if (userRole === "client" && location.pathname !== "/client-dashboard") {
-        return <Navigate to="/client-dashboard" replace />;
-      } else if (userRole === "freelancer" && location.pathname !== "/freelancer-dashboard") {
-        return <Navigate to="/freelancer-dashboard" replace />;
+      if (userRole === "client" && location.pathname !== "/client") {
+        return <Navigate to="/client" replace />;
+      } else if (userRole === "freelancer" && location.pathname !== "/freelancer") {
+        return <Navigate to="/freelancer" replace />;
       } else if (!userRole && location.pathname !== "/") {
         return <Navigate to="/" replace />;
       }
+      // If user doesn't have the right role, show a simple unauthorized message
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-red-500 mb-4">Unauthorized Access</h1>
+            <p className="text-muted-foreground mb-4">You don't have permission to access this page.</p>
+            <button 
+              onClick={() => window.history.back()} 
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md"
+            >
+              Go Back
+            </button>
+          </div>
+        </div>
+      );
     }
   }
 

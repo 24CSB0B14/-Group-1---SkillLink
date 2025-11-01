@@ -64,6 +64,16 @@ const authService = {
     }
   },
 
+  // Delete user account
+  deleteAccount: async () => {
+    try {
+      const response = await api.delete('/auth/delete-account');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
   // Forgot password
   forgotPassword: async ({ email }) => {
     try {

@@ -19,6 +19,8 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import adminService from "@/services/admin.service";
 import disputeService from "@/services/dispute.service";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({});
@@ -51,7 +53,14 @@ const AdminDashboard = () => {
       setUsers(usersRes.data?.users || []);
       setTransactions(transactionsRes.data || []);
     } catch (error) {
-      toast.error("Failed to load dashboard data");
+      console.error('Error fetching dashboard data:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to load dashboard data: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to load dashboard data: ${error.message}`);
+      } else {
+        toast.error("Failed to load dashboard data. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
@@ -91,7 +100,14 @@ const AdminDashboard = () => {
       setSelectedDispute(null);
       fetchAllData(); // Refresh data
     } catch (error) {
-      toast.error("Failed to resolve dispute");
+      console.error('Error resolving dispute:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to resolve dispute: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to resolve dispute: ${error.message}`);
+      } else {
+        toast.error("Failed to resolve dispute. Please try again later.");
+      }
     } finally {
       setResolutionLoading(false);
     }
@@ -104,7 +120,14 @@ const AdminDashboard = () => {
         toast.success("Escrow released successfully");
         fetchAllData();
       } catch (error) {
-        toast.error("Failed to release escrow");
+        console.error('Error releasing escrow:', error);
+        if (error.response?.data?.message) {
+          toast.error(`Failed to release escrow: ${error.response.data.message}`);
+        } else if (error.message) {
+          toast.error(`Failed to release escrow: ${error.message}`);
+        } else {
+          toast.error("Failed to release escrow. Please try again later.");
+        }
       }
     }
   };
@@ -116,360 +139,393 @@ const AdminDashboard = () => {
         toast.success("Client refunded successfully");
         fetchAllData();
       } catch (error) {
-        toast.error("Failed to refund client");
+        console.error('Error refunding client:', error);
+        if (error.response?.data?.message) {
+          toast.error(`Failed to refund client: ${error.response.data.message}`);
+        } else if (error.message) {
+          toast.error(`Failed to refund client: ${error.message}`);
+        } else {
+          toast.error("Failed to refund client. Please try again later.");
+        }
       }
     }
   };
 
-  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (loading) return (
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 flex items-center justify-center">Loading...</div>
+      <Footer />
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-            <p className="text-muted-foreground">Platform management and oversight</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-primary" />
-            <span className="font-semibold">Administrator</span>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Total Users</p>
-                  <p className="text-2xl font-bold">{stats.totalUsers}</p>
-                </div>
-                <Users className="w-8 h-8 text-primary/60" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Active Contracts</p>
-                  <p className="text-2xl font-bold">{stats.activeContracts}</p>
-                </div>
-                <FileText className="w-8 h-8 text-primary/60" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Pending Disputes</p>
-                  <p className="text-2xl font-bold">{stats.pendingDisputes}</p>
-                </div>
-                <AlertTriangle className="w-8 h-8 text-warning/60" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Platform Revenue</p>
-                  <p className="text-2xl font-bold">${stats.platformFee}</p>
-                </div>
-                <DollarSign className="w-8 h-8 text-success/60" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-        <Tabs defaultValue="disputes" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="disputes">Disputes</TabsTrigger>
-            <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="transactions">Transactions</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          </TabsList>
-
-          {/* Disputes Tab */}
-          <TabsContent value="disputes" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <AlertTriangle className="w-5 h-5" />
-                  Active Disputes
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Dispute ID</TableHead>
-                      <TableHead>Contract</TableHead>
-                      <TableHead>Parties</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {disputes.map((dispute) => (
-                      <TableRow key={dispute.id}>
-                        <TableCell className="font-medium">{dispute.id}</TableCell>
-                        <TableCell>{dispute.contractId}</TableCell>
-                        <TableCell>
-                          <div className="text-sm">
-                            <div>Client: {dispute.client}</div>
-                            <div>Freelancer: {dispute.freelancer}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>${dispute.amount}</TableCell>
-                        <TableCell className="max-w-xs truncate">{dispute.reason}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(dispute.status)}>
-                            {dispute.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Button size="sm" onClick={() => handleOpenResolution(dispute)}>
-                            Review
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* User Management Tab */}
-          <TabsContent value="users" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>User Management</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>User</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Join Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {users.map((user) => (
-                      <TableRow key={user._id}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback>
-                                {user.username?.charAt(0).toUpperCase() || 'U'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{user.username || user.email}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell>{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(user.status)}>
-                            {user.status || 'active'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            <Button size="sm" variant="outline">
-                              View
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Transactions Tab */}
-          <TabsContent value="transactions" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Transaction History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Transaction ID</TableHead>
-                      <TableHead>Contract</TableHead>
-                      <TableHead>Amount</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.map((transaction) => (
-                      <TableRow key={transaction._id}>
-                        <TableCell className="font-medium">{transaction._id?.slice(-8)}</TableCell>
-                        <TableCell>{transaction.job?.title || 'N/A'}</TableCell>
-                        <TableCell>${transaction.amount}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {transaction.paymentType || 'escrow'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(transaction.status)}>
-                            {transaction.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{new Date(transaction.createdAt).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <div className="flex gap-2">
-                            {transaction.status === 'pending' && (
-                              <>
-                                <Button size="sm" onClick={() => handleReleaseEscrow(transaction._id)}>
-                                  Release
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => handleRefundClient(transaction._id)}>
-                                  Refund
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Platform Growth</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-center py-8">
-                    <TrendingUp className="w-12 h-12 mx-auto mb-4 text-primary/60" />
-                    <p className="text-muted-foreground">Analytics dashboard coming soon</p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 border rounded-lg">
-                      <Users className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="text-sm font-medium">5 new users registered</p>
-                        <p className="text-xs text-muted-foreground">2 hours ago</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3 p-3 border rounded-lg">
-                      <FileText className="w-5 h-5 text-primary" />
-                      <div>
-                        <p className="text-sm font-medium">3 new contracts created</p>
-                        <p className="text-xs text-muted-foreground">4 hours ago</p>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+    <div className="min-h-screen bg-background flex flex-col">
+      <Header />
+      <div className="flex-1 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+              <p className="text-muted-foreground">Platform management and oversight</p>
             </div>
-          </TabsContent>
-        </Tabs>
+            <div className="flex items-center gap-2">
+              <Shield className="w-6 h-6 text-primary" />
+              <span className="font-semibold">Administrator</span>
+            </div>
+          </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Total Users</p>
+                    <p className="text-2xl font-bold">{stats.totalUsers}</p>
+                  </div>
+                  <Users className="w-8 h-8 text-primary/60" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Active Contracts</p>
+                    <p className="text-2xl font-bold">{stats.activeContracts}</p>
+                  </div>
+                  <FileText className="w-8 h-8 text-primary/60" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Pending Disputes</p>
+                    <p className="text-2xl font-bold">{stats.pendingDisputes}</p>
+                  </div>
+                  <AlertTriangle className="w-8 h-8 text-warning/60" />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Platform Revenue</p>
+                    <p className="text-2xl font-bold">${stats.platformFee}</p>
+                  </div>
+                  <DollarSign className="w-8 h-8 text-success/60" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content Tabs */}
+          <Tabs defaultValue="disputes" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="disputes">Disputes</TabsTrigger>
+              <TabsTrigger value="users">User Management</TabsTrigger>
+              <TabsTrigger value="transactions">Transactions</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            </TabsList>
+
+            {/* Disputes Tab */}
+            <TabsContent value="disputes" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <AlertTriangle className="w-5 h-5" />
+                    Active Disputes
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Dispute ID</TableHead>
+                        <TableHead>Contract</TableHead>
+                        <TableHead>Parties</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {disputes.map((dispute) => (
+                        <TableRow key={dispute._id}>
+                          <TableCell className="font-medium">{dispute._id?.substring(0, 8)}</TableCell>
+                          <TableCell>{dispute.contractId?.substring(0, 8)}</TableCell>
+                          <TableCell>
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={dispute.client?.avatar} />
+                                  <AvatarFallback>{dispute.client?.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm">Client</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="w-6 h-6">
+                                  <AvatarImage src={dispute.freelancer?.avatar} />
+                                  <AvatarFallback>{dispute.freelancer?.name?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <span className="text-sm">Freelancer</span>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>${dispute.amount}</TableCell>
+                          <TableCell className="max-w-xs truncate">{dispute.reason}</TableCell>
+                          <TableCell>
+                            <Badge className={getStatusColor(dispute.status)}>
+                              {dispute.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Button size="sm" onClick={() => handleOpenResolution(dispute)}>
+                              Resolve
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Users Tab */}
+            <TabsContent value="users" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    User Management
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {users.map((user) => (
+                        <TableRow key={user._id}>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              <Avatar>
+                                <AvatarImage src={user.avatar} />
+                                <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div>
+                                <div className="font-medium">{user.name}</div>
+                                <div className="text-sm text-muted-foreground">@{user.username}</div>
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{user.role}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.isVerified ? "default" : "secondary"}>
+                              {user.isVerified ? "Verified" : "Pending"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button size="sm" variant="outline">
+                              Manage
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Transactions Tab */}
+            <TabsContent value="transactions" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5" />
+                    Transaction History
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Transaction ID</TableHead>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Amount</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((transaction) => (
+                        <TableRow key={transaction._id}>
+                          <TableCell className="font-medium">{transaction._id?.substring(0, 8)}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{transaction.type}</Badge>
+                          </TableCell>
+                          <TableCell>${transaction.amount}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">{transaction.status}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(transaction.createdAt).toLocaleDateString()}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Analytics Tab */}
+            <TabsContent value="analytics" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    Platform Analytics
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">New Users</p>
+                            <p className="text-2xl font-bold">+{stats.newUsers || 0}</p>
+                          </div>
+                          <Users className="w-8 h-8 text-primary/60" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Revenue</p>
+                            <p className="text-2xl font-bold">${stats.revenue || 0}</p>
+                          </div>
+                          <DollarSign className="w-8 h-8 text-success/60" />
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Active Projects</p>
+                            <p className="text-2xl font-bold">{stats.activeProjects || 0}</p>
+                          </div>
+                          <FileText className="w-8 h-8 text-primary/60" />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
+      <Footer />
 
       {/* Dispute Resolution Modal */}
-      <Dialog open={isResolutionModalOpen} onOpenChange={(open) => {
-        setIsResolutionModalOpen(open);
-        if (!open) {
-          setResolutionNotes("");
-          setResolutionDecision("");
-          setSelectedDispute(null);
-        }
-      }}>
+      <Dialog open={isResolutionModalOpen} onOpenChange={setIsResolutionModalOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Resolve Dispute #{selectedDispute?.id}</DialogTitle>
+            <DialogTitle>Resolve Dispute</DialogTitle>
           </DialogHeader>
           <div className="space-y-6">
             {selectedDispute && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h4 className="font-semibold">Contract</h4>
-                    <p className="text-sm">{selectedDispute.contractId}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Amount</h4>
-                    <p className="text-sm">${selectedDispute.amount}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Client</h4>
-                    <p className="text-sm">{selectedDispute.client}</p>
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Freelancer</h4>
-                    <p className="text-sm">{selectedDispute.freelancer}</p>
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Dispute Details</Label>
+                  <div className="bg-muted p-4 rounded-lg space-y-2">
+                    <p><strong>ID:</strong> {selectedDispute._id}</p>
+                    <p><strong>Reason:</strong> {selectedDispute.reason}</p>
+                    <p><strong>Amount:</strong> ${selectedDispute.amount}</p>
                   </div>
                 </div>
+
                 <div>
-                  <h4 className="font-semibold">Reason</h4>
-                  <p className="text-sm text-muted-foreground">{selectedDispute.reason}</p>
+                  <Label className="text-sm font-medium mb-2 block">Parties Involved</Label>
+                  <div className="flex gap-4">
+                    <div className="flex-1 bg-muted p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={selectedDispute.client?.avatar} />
+                          <AvatarFallback>{selectedDispute.client?.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">Client</span>
+                      </div>
+                      <p className="text-sm">{selectedDispute.client?.name}</p>
+                    </div>
+                    <div className="flex-1 bg-muted p-3 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Avatar className="w-8 h-8">
+                          <AvatarImage src={selectedDispute.freelancer?.avatar} />
+                          <AvatarFallback>{selectedDispute.freelancer?.name?.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">Freelancer</span>
+                      </div>
+                      <p className="text-sm">{selectedDispute.freelancer?.name}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
 
             <div>
-              <Label className="text-sm font-medium mb-2 block">Decision</Label>
-              <div className="space-y-2">
-                {[
-                  { value: "client", label: "Award to Client (Full Refund)" },
-                  { value: "freelancer", label: "Award to Freelancer (Full Payment)" },
-                  { value: "split", label: "Split Payment" },
-                  { value: "continue", label: "Continue Work" }
-                ].map((option) => (
-                  <label key={option.value} className="flex items-center gap-2">
+              <Label className="text-sm font-medium mb-2 block">Resolution Decision</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {['client', 'freelancer', 'split'].map((decision) => (
+                  <label
+                    key={decision}
+                    className={`p-3 border rounded-lg cursor-pointer text-center capitalize ${
+                      resolutionDecision === decision
+                        ? 'border-primary bg-primary/10'
+                        : 'border-input hover:bg-muted'
+                    }`}
+                  >
                     <input
                       type="radio"
                       name="decision"
-                      value={option.value}
-                      checked={resolutionDecision === option.value}
+                      value={decision}
+                      checked={resolutionDecision === decision}
                       onChange={(e) => setResolutionDecision(e.target.value)}
-                      className="text-primary focus:ring-primary"
+                      className="sr-only"
                     />
-                    <span className="text-sm">{option.label}</span>
+                    {decision}
                   </label>
                 ))}
               </div>

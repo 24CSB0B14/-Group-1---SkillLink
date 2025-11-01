@@ -23,7 +23,7 @@ VITE_API_BASE_URL=http://localhost:3000/api/v1
 **Backend (.env file):**
 ```
 PORT=3000
-CORS_ORIGIN=http://localhost:8080,http://localhost:8081
+CORS_ORIGIN=http://localhost:8082
 ```
 
 ### 2. API Service Layer

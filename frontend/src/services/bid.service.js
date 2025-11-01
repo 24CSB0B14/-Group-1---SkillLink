@@ -18,7 +18,17 @@ const bidService = {
       const response = await api.get(`/bids/job/${jobId}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error;
+      console.error("Error fetching bids:", error);
+      if (error.response) {
+        // Server responded with error status
+        throw error.response.data || error;
+      } else if (error.request) {
+        // Request was made but no response received
+        throw new Error("No response from server. Please check your connection.");
+      } else {
+        // Something else happened
+        throw new Error(error.message || "Failed to fetch bids");
+      }
     }
   },
 

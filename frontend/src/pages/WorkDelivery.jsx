@@ -18,44 +18,83 @@ const WorkDelivery = () => {
   });
 
   const addLink = () => {
-    setFormData(prev => ({
-      ...prev,
-      links: [...prev.links, ""]
-    }));
+    try {
+      setFormData(prev => ({
+        ...prev,
+        links: [...prev.links, ""]
+      }));
+    } catch (error) {
+      console.error('Error adding link:', error);
+      toast.error("Failed to add link");
+    }
   };
 
   const updateLink = (index, value) => {
-    const newLinks = [...formData.links];
-    newLinks[index] = value;
-    setFormData(prev => ({ ...prev, links: newLinks }));
+    try {
+      const newLinks = [...formData.links];
+      newLinks[index] = value;
+      setFormData(prev => ({ ...prev, links: newLinks }));
+    } catch (error) {
+      console.error('Error updating link:', error);
+      toast.error("Failed to update link");
+    }
   };
 
   const removeLink = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      links: prev.links.filter((_, i) => i !== index)
-    }));
+    try {
+      setFormData(prev => ({
+        ...prev,
+        links: prev.links.filter((_, i) => i !== index)
+      }));
+    } catch (error) {
+      console.error('Error removing link:', error);
+      toast.error("Failed to remove link");
+    }
   };
 
   const handleFileUpload = (e) => {
-    const files = Array.from(e.target.files);
-    setFormData(prev => ({
-      ...prev,
-      files: [...prev.files, ...files]
-    }));
+    try {
+      const files = Array.from(e.target.files);
+      setFormData(prev => ({
+        ...prev,
+        files: [...prev.files, ...files]
+      }));
+    } catch (error) {
+      console.error('Error handling file upload:', error);
+      toast.error("Failed to process file upload");
+    }
   };
 
   const removeFile = (index) => {
-    setFormData(prev => ({
-      ...prev,
-      files: prev.files.filter((_, i) => i !== index)
-    }));
+    try {
+      setFormData(prev => ({
+        ...prev,
+        files: prev.files.filter((_, i) => i !== index)
+      }));
+    } catch (error) {
+      console.error('Error removing file:', error);
+      toast.error("Failed to remove file");
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate work submission
-    navigate("/contract/CTR-001");
+    
+    try {
+      // In a real implementation, you would submit the work data to the backend
+      // For now, we'll just show a success message and navigate back
+      toast.success("Work delivered successfully!");
+      navigate(-1);
+    } catch (error) {
+      console.error('Error submitting work:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to submit work: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to submit work: ${error.message}`);
+      } else {
+        toast.error("Failed to submit work. Please try again later.");
+      }
+    }
   };
 
   return (
@@ -73,16 +112,10 @@ const WorkDelivery = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Project Info */}
+              {/* Project Info - This would be populated with real data in a full implementation */}
               <div className="p-4 border rounded-lg bg-muted/30">
-                <h4 className="font-semibold mb-2">Project: Mobile App UI/UX Design</h4>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    Due: 2025-02-15
-                  </div>
-                  <Badge variant="outline">Contract #CTR-001</Badge>
-                </div>
+                <h4 className="font-semibold mb-2">Project Information</h4>
+                <p className="text-sm text-muted-foreground">Project details would be loaded here</p>
               </div>
 
               {/* Work Description */}
@@ -230,7 +263,7 @@ const WorkDelivery = () => {
                   type="button"
                   variant="outline"
                   size="lg"
-                  onClick={() => navigate("/contract/CTR-001")}
+                  onClick={() => navigate(-1)}
                 >
                   Cancel
                 </Button>

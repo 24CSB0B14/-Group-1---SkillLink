@@ -1,4 +1,15 @@
 import { User } from "../models/user.models.js";
+import { ClientProfile } from "../models/clientProfile.models.js";
+import { FreelancerProfile } from "../models/freelancerProfile.models.js";
+import { Job } from "../models/job.models.js";
+import { Bid } from "../models/bid.models.js";
+import { Conversation } from "../models/conversations.models.js";
+import { Message } from "../models/messages.models.js";
+import { Notification } from "../models/notification.models.js";
+import { Review } from "../models/review.models.js";
+import { Contract } from "../models/contract.models.js";
+import { Escrow } from "../models/escrow.models.js";
+import { Dispute } from "../models/dispute.models.js";
 import { ApiError } from "../utils/api-error.js";
 import { ApiResponse } from "../utils/api-response.js";
 import { asyncHandler } from "../utils/async-handler.js";
@@ -524,6 +535,109 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
         )
 })
 
+// Delete user account
+const deleteUserAccount = asyncHandler(async (req, res) => {
+    try {
+        const userId = req.user._id;
+        
+        // Delete user's profile based on role
+        if (req.user.role === "client" && req.user.clientProfile) {
+            await ClientProfile.findByIdAndDelete(req.user.clientProfile);
+        } else if (req.user.role === "freelancer" && req.user.freelancerProfile) {
+            await FreelancerProfile.findByIdAndDelete(req.user.freelancerProfile);
+        }
+        
+        // Delete user's jobs (if client)
+        if (req.user.role === "client") {
+            await Job.deleteMany({ client: userId });
+        }
+        
+        // Delete user's bids (if freelancer)
+        if (req.user.role === "freelancer") {
+            await Bid.deleteMany({ freelancer: userId });
+        }
+        
+        // Delete user's conversations and messages
+        const userConversations = await Conversation.find({ 
+            participants: userId 
+        });
+        
+        const conversationIds = userConversations.map(conv => conv._id);
+        
+        // Delete all messages in these conversations
+        await Message.deleteMany({ 
+            conversationId: { $in: conversationIds } 
+        });
+        
+        // Delete conversations
+        await Conversation.deleteMany({ 
+            participants: userId 
+        });
+        
+        // Delete user's notifications
+        await Notification.deleteMany({ 
+            $or: [
+                { recipient: userId },
+                { sender: userId }
+            ]
+        });
+        
+        // Delete user's reviews
+        await Review.deleteMany({ 
+            $or: [
+                { reviewer: userId },
+                { reviewee: userId }
+            ]
+        });
+        
+        // Delete user's contracts
+        await Contract.deleteMany({ 
+            $or: [
+                { client: userId },
+                { freelancer: userId }
+            ]
+        });
+        
+        // Delete user's escrow records
+        await Escrow.deleteMany({ 
+            $or: [
+                { client: userId },
+                { freelancer: userId }
+            ]
+        });
+        
+        // Delete user's disputes
+        await Dispute.deleteMany({ 
+            raisedBy: userId
+        });
+        
+        // Finally, delete the user account
+        await User.findByIdAndDelete(userId);
+        
+        // Clear cookies
+        const options = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax'
+        };
+        
+        return res
+            .status(200)
+            .clearCookie("accessToken", options)
+            .clearCookie("refreshToken", options)
+            .json(
+                new ApiResponse(
+                    200,
+                    {},
+                    "Account deleted successfully"
+                )
+            );
+    } catch (error) {
+        console.error("Error deleting account:", error);
+        throw new ApiError(500, "Failed to delete account");
+    }
+});
+
 // Export all controller functions
 export {
     registerUser,
@@ -536,5 +650,6 @@ export {
     forgotPasswordRequest,
     resetForgotPassword,
     changeCurrentPassword,
-    updateUserAvatar
+    updateUserAvatar,
+    deleteUserAccount
 }

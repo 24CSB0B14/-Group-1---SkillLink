@@ -23,19 +23,29 @@ const jobService = {
   },
 
   // Get job by ID
-  getJobById: async (id) => {
+  getJobById: async (jobId) => {
     try {
-      const response = await api.get(`/jobs/${id}`);
+      const response = await api.get(`/jobs/${jobId}`);
       return response.data;
     } catch (error) {
-      throw error.response?.data || error;
+      console.error("Error fetching job:", error);
+      if (error.response) {
+        // Server responded with error status
+        throw error.response.data || error;
+      } else if (error.request) {
+        // Request was made but no response received
+        throw new Error("No response from server. Please check your connection.");
+      } else {
+        // Something else happened
+        throw new Error(error.message || "Failed to fetch job details");
+      }
     }
   },
 
   // Update job
-  updateJob: async (id, jobData) => {
+  updateJob: async (jobId, jobData) => {
     try {
-      const response = await api.patch(`/jobs/${id}`, jobData);
+      const response = await api.patch(`/jobs/${jobId}`, jobData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -43,9 +53,9 @@ const jobService = {
   },
 
   // Delete job
-  deleteJob: async (id) => {
+  deleteJob: async (jobId) => {
     try {
-      const response = await api.delete(`/jobs/${id}`);
+      const response = await api.delete(`/jobs/${jobId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
