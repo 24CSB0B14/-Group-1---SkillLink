@@ -2,6 +2,10 @@
 
 SkillLink is a comprehensive freelance platform that connects clients with freelancers for various projects and services.
 
+## Repository
+
+GitHub: [https://github.com/24CSB0B14/-Group-1---SkillLink](https://github.com/24CSB0B14/-Group-1---SkillLink)
+
 ## Project Structure
 
 ```
@@ -99,8 +103,6 @@ The default configuration should work for local development.
    npm run dev
    ```
 
-#### Option 2: Run both servers with batch file (Windows)
-
 Double-click the `start-dev.bat` file to start both servers simultaneously.
 
 ### Accessing the Application
@@ -143,21 +145,6 @@ The frontend communicates with the backend through a well-structured service lay
 - `review.service.js` - Rating and review system
 - `notification.service.js` - User notifications
 - `admin.service.js` - Administrative functions
-
-## Recent Improvements
-
-This project has been optimized with the following improvements:
-
-✅ **Fixed port configuration discrepancies** - All configuration files now consistently use port 8082
-✅ **Fixed CORS settings** - Backend correctly accepts requests from port 8082
-✅ **Removed unused dependencies** - Cleaned up unnecessary packages (concurrently in frontend, lovable-tagger)
-✅ **Removed unused files** - Deleted Index.jsx and bun.lockb
-✅ **Added environment examples** - Created .env.example files for easy setup
-✅ **Added .gitignore files** - Proper git ignore configuration for all directories
-✅ **Added Prettier configuration** - Consistent code formatting across the project
-✅ **Cleaned up commented code** - Removed unused/commented code from Landing page
-✅ **Fixed backend error logging** - Corrected console.error template literal
-✅ **Updated documentation** - Removed Lovable-specific references, added accurate setup instructions
 
 ## Development
 
