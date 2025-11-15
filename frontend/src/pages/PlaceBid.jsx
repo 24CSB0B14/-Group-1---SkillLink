@@ -1,0 +1,217 @@
+// pages/PlaceBid.jsx
+import { useState, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { DollarSign, Calendar, Clock, ArrowLeft } from "lucide-react";
+import { toast } from "sonner";
+import jobService from "@/services/job.service";
+import bidService from "@/services/bid.service";
+import { useRole } from "@/hooks/useRole";
+import { useAuth } from "@/context/AuthContext";
+
+const PlaceBid = () => {
+  const { jobId } = useParams();
+  const navigate = useNavigate();
+  const { isFreelancer, userRole } = useRole();
+  const { isAuthenticated, user } = useAuth();
+  const [job, setJob] = useState(null);
+  const [bidData, setBidData] = useState({
+    amount: "",
+    timeline: "",
+    proposal: "",
+    milestones: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  // Memoize the freelancer check to prevent infinite loops
+  const checkFreelancerAccess = useCallback(() => {
+    if (!isAuthenticated) {
+      toast.error("Please login to place a bid");
+      navigate("/login");
+      return false;
+    }
+    
+    if (!user) {
+      toast.error("User data not available");
+      navigate("/login");
+      return false;
+    }
+    
+    if (userRole !== "freelancer") {
+      toast.error("Only freelancers can place bids");
+      navigate("/job-details/" + jobId);
+      return false;
+    }
+    
+    return true;
+  }, [isAuthenticated, user, userRole, jobId, navigate]);
+
+  useEffect(() => {
+    const hasAccess = checkFreelancerAccess();
+    if (hasAccess) {
+      fetchJobDetails();
+    }
+  }, [checkFreelancerAccess]);
+
+  const fetchJobDetails = async () => {
+    try {
+      setLoading(true);
+      const response = await jobService.getJobById(jobId);
+      // Use actual API response data
+      const jobData = response.data || response;
+      setJob(jobData);
+    } catch (error) {
+      console.error('Error fetching job details:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to load job details: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to load job details: ${error.message}`);
+      } else {
+        toast.error("Failed to load job details. Please try again later.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const bidPayload = {
+        amount: parseFloat(bidData.amount),
+        coverLetter: bidData.proposal  // Map proposal to coverLetter for backend
+      };
+
+      const response = await bidService.placeBid(jobId, bidPayload);
+      toast.success("Bid submitted successfully!");
+      navigate("/job-details/" + jobId);
+    } catch (error) {
+      console.error('Error submitting bid:', error);
+      if (error.response?.data?.message) {
+        toast.error(`Failed to submit bid: ${error.response.data.message}`);
+      } else if (error.message) {
+        toast.error(`Failed to submit bid: ${error.message}`);
+      } else {
+        toast.error("Failed to submit bid. Please try again later.");
+      }
+    }
+  };
+
+  // Show access denied message if user is not a freelancer
+  // Additional check to ensure we have user data
+  if (!isAuthenticated || !user || userRole !== "freelancer") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <p className="text-muted-foreground mb-6">
+            Only freelancers can place bids on jobs.
+          </p>
+          <Button onClick={() => navigate("/job-details/" + jobId)}>
+            Back to Job
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
+  if (!job) return <div className="min-h-screen bg-background flex items-center justify-center">Job not found</div>;
+
+  return (
+    <div className="min-h-screen bg-background py-8">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <Button variant="ghost" onClick={() => navigate("/job-details/" + jobId)} className="mb-6">
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Job
+        </Button>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-2xl">Place Your Bid</CardTitle>
+            <div className="space-y-2">
+              <h3 className="font-semibold text-lg">{job.title}</h3>
+              <div className="flex flex-wrap gap-2">
+                {job.skills?.map((skill, index) => (
+                  <Badge key={index} variant="outline">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Bid Amount */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Your Bid Amount ($)</label>
+                <div className="relative">
+                  <DollarSign className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    type="number"
+                    placeholder="Enter your bid amount"
+                    className="pl-10"
+                    value={bidData.amount}
+                    onChange={(e) => setBidData(prev => ({ ...prev, amount: e.target.value }))}
+                    required
+                  />
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Client's budget: ${job.budget} ({job.budgetType})
+                </p>
+              </div>
+
+              {/* Timeline */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Estimated Timeline</label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="e.g., 3 weeks, 1 month"
+                    className="pl-10"
+                    value={bidData.timeline}
+                    onChange={(e) => setBidData(prev => ({ ...prev, timeline: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Proposal */}
+              <div>
+                <label className="text-sm font-medium mb-2 block">Your Proposal</label>
+                <Textarea
+                  placeholder="Describe why you're the best fit for this project. Include your relevant experience and approach..."
+                  rows={8}
+                  value={bidData.proposal}
+                  onChange={(e) => setBidData(prev => ({ ...prev, proposal: e.target.value }))}
+                  required
+                />
+              </div>
+
+              {/* Submit Buttons */}
+              <div className="flex gap-4 pt-4">
+                <Button type="submit" size="lg" className="flex-1">
+                  Submit Bid
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  size="lg" 
+                  onClick={() => navigate("/job-details/" + jobId)}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
+export default PlaceBid;

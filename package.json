@@ -1,0 +1,17 @@
+{
+  "name": "skilllink-dev",
+  "version": "1.0.0",
+  "description": "Development scripts for SkillLink",
+  "scripts": {
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:both": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "install:all": "concurrently \"cd backend && npm install\" \"cd frontend && npm install\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.0.0"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.24"
+  }
+}
